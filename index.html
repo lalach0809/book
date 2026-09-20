@@ -112,60 +112,50 @@
       border-radius: 3px;
     }
   </style>
-<style>
-  /* 기존 스타일 유지 */
-  body {
-    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
-    touch-action: manipulation;
-  }
-  
-  /* ... 중간 생략 ... */
-
-  /* [추가] 모바일 전용 슬라이드 텍스트 100% 확대 (PC는 기존 크기 유지) */
+/* 모바일 및 지폴드 5 최적화: 2배 크기에서 25% 축소 (원본 대비 1.5배) */
   @media (max-width: 1024px) {
-    /* 슬라이드 본문 기본 텍스트 (기존 0.75rem ~ 0.875rem -> 2배 확대) */
+    /* 슬라이드 본문 기본 텍스트 (기존 1.5rem -> 1.125rem) */
     #slideContent {
-      font-size: 1.5rem !important; /* 기존 text-xs(12px) 대비 200%(24px) */
-      line-height: 1.8 !important;
+      font-size: 1.15rem !important;
+      line-height: 1.75 !important;
     }
 
-    /* 노션 스타일 제목/인용/코드/콜아웃 100% 확대 */
+    /* 노션 스타일 소제목 및 블록 */
     #slideContent .notion-h1 {
-      font-size: 2.7rem !important; /* 1.35rem -> 2.7rem */
+      font-size: 2.0rem !important;
       line-height: 1.35 !important;
     }
     #slideContent .notion-h2 {
-      font-size: 2.3rem !important; /* 1.15rem -> 2.3rem */
+      font-size: 1.7rem !important;
       line-height: 1.4 !important;
     }
     #slideContent .notion-h3 {
-      font-size: 2.04rem !important; /* 1.02rem -> 2.04rem */
+      font-size: 1.5rem !important;
       line-height: 1.45 !important;
     }
     #slideContent .notion-callout,
     #slideContent .notion-quote {
-      font-size: 1.5rem !important;
-      line-height: 1.7 !important;
+      font-size: 1.15rem !important;
+      line-height: 1.65 !important;
     }
     #slideContent .notion-code {
-      font-size: 1.3rem !important;
+      font-size: 1.0rem !important;
     }
     #slideContent .notion-inline-code {
-      font-size: 1.35rem !important;
+      font-size: 1.05rem !important;
     }
 
-    /* 슬라이드 상단 개별 슬라이드 제목 */
+    /* 슬라이드 개별 제목 */
     #slideTitle {
-      font-size: 1.75rem !important; /* 14px -> 28px */
+      font-size: 1.35rem !important;
       line-height: 1.4 !important;
     }
 
-    /* 슬라이드 상단 목차 타이틀 */
+    /* 상단 목차 타이틀 */
     #currentHeadingTitle {
-      font-size: 1.75rem !important;
+      font-size: 1.35rem !important;
     }
   }
-</style>
 </head>
 <body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden select-none md:select-auto">
 
