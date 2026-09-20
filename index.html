@@ -112,6 +112,60 @@
       border-radius: 3px;
     }
   </style>
+<style>
+  /* 기존 스타일 유지 */
+  body {
+    font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
+    touch-action: manipulation;
+  }
+  
+  /* ... 중간 생략 ... */
+
+  /* [추가] 모바일 전용 슬라이드 텍스트 100% 확대 (PC는 기존 크기 유지) */
+  @media (max-width: 767px) {
+    /* 슬라이드 본문 기본 텍스트 (기존 0.75rem ~ 0.875rem -> 2배 확대) */
+    #slideContent {
+      font-size: 1.5rem !important; /* 기존 text-xs(12px) 대비 200%(24px) */
+      line-height: 1.8 !important;
+    }
+
+    /* 노션 스타일 제목/인용/코드/콜아웃 100% 확대 */
+    #slideContent .notion-h1 {
+      font-size: 2.7rem !important; /* 1.35rem -> 2.7rem */
+      line-height: 1.35 !important;
+    }
+    #slideContent .notion-h2 {
+      font-size: 2.3rem !important; /* 1.15rem -> 2.3rem */
+      line-height: 1.4 !important;
+    }
+    #slideContent .notion-h3 {
+      font-size: 2.04rem !important; /* 1.02rem -> 2.04rem */
+      line-height: 1.45 !important;
+    }
+    #slideContent .notion-callout,
+    #slideContent .notion-quote {
+      font-size: 1.5rem !important;
+      line-height: 1.7 !important;
+    }
+    #slideContent .notion-code {
+      font-size: 1.3rem !important;
+    }
+    #slideContent .notion-inline-code {
+      font-size: 1.35rem !important;
+    }
+
+    /* 슬라이드 상단 개별 슬라이드 제목 */
+    #slideTitle {
+      font-size: 1.75rem !important; /* 14px -> 28px */
+      line-height: 1.4 !important;
+    }
+
+    /* 슬라이드 상단 목차 타이틀 */
+    #currentHeadingTitle {
+      font-size: 1.75rem !important;
+    }
+  }
+</style>
 </head>
 <body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden select-none md:select-auto">
 
@@ -514,7 +568,7 @@
       "기술과학": "https://script.google.com/macros/s/AKfycbxwFuAKviYQoUNm_HgFoZbkiuB1d2MZTtRq3FBj7FJFEyB426dA-dR9J2yIWT6XHsI/exec",
       "사회과학": "https://script.google.com/macros/s/AKfycbzbAIgt2fsG_FgxoNt3_044LtJLtlQFK9PvAD9cGMufsTnlzoAqGSI7yoJRoHJCMRa9/exec",
       "언어": "https://script.google.com/macros/s/AKfycbziAs5sq1FeF1e_pIYnBGrSYELzm0XtCtVM21vhzAvnizWY9hRDNf_9dQF6QAO1cauM/exec",
-      "역사": "https://script.google.com/macros/s/AKfycbwU78Pt6eHNzkgaUvpVMYWhZ1Z1ZPuu3PyiGxqvLUH4p5hB1l30fCcFH2WuwVVSJ2O1/exec",
+      "역사": "https://script.google.com/macros/s/AKfycbyX7_mpsohU2a3b0vBCSuw1FGeYf_m4lO8n19MUF3G4hsrZqgseA55ACFSY5IElzKAS/exec",
       "예술": "https://script.google.com/macros/s/AKfycbw1x_yyt6P930s_s8_wZ6LOT1Ar26mRbd1MBH4Nlvdq4IkX1DUSxoTis8cXLXxIUr7_/exec",
       "외국문학": "https://script.google.com/macros/s/AKfycbxgMI4JHJohqw31ChkgptG089UxMYKBxu2IxPpdc7paI1U6SrTavtZgAoTdHDdPWNfAUg/exec",
       "자연과학": "https://script.google.com/macros/s/AKfycbz6BFENjVDHUwH0dXwcHZCJg0xnyw4s4z-QoqO3h3yayyLphZ1FbC6ErOv8wSv0L74B/exec",
