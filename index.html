@@ -112,58 +112,50 @@
       border-radius: 3px;
     }
 
-/* 모바일 및 지폴드 5 최적화: 2배 크기에서 25% 축소 (원본 대비 1.5배) */
-  @media (max-width: 1024px) {
-    /* 슬라이드 본문 기본 텍스트 (기존 1.5rem -> 1.125rem) */
-    #slideContent {
-      font-size: 1.15rem !important;
-      line-height: 1.75 !important;
+    @media (max-width: 1024px) {
+      #slideContent {
+        font-size: 1.15rem !important;
+        line-height: 1.75 !important;
+      }
+      #slideContent .notion-h1 {
+        font-size: 2.0rem !important;
+        line-height: 1.35 !important;
+      }
+      #slideContent .notion-h2 {
+        font-size: 1.7rem !important;
+        line-height: 1.4 !important;
+      }
+      #slideContent .notion-h3 {
+        font-size: 1.5rem !important;
+        line-height: 1.45 !important;
+      }
+      #slideContent .notion-callout,
+      #slideContent .notion-quote {
+        font-size: 1.15rem !important;
+        line-height: 1.65 !important;
+      }
+      #slideContent .notion-code {
+        font-size: 1.0rem !important;
+      }
+      #slideContent .notion-inline-code {
+        font-size: 1.05rem !important;
+      }
+      #slideTitle {
+        font-size: 1.35rem !important;
+        line-height: 1.4 !important;
+      }
+      #currentHeadingTitle {
+        font-size: 1.35rem !important;
+      }
     }
-
-    /* 노션 스타일 소제목 및 블록 */
-    #slideContent .notion-h1 {
-      font-size: 2.0rem !important;
-      line-height: 1.35 !important;
-    }
-    #slideContent .notion-h2 {
-      font-size: 1.7rem !important;
-      line-height: 1.4 !important;
-    }
-    #slideContent .notion-h3 {
-      font-size: 1.5rem !important;
-      line-height: 1.45 !important;
-    }
-    #slideContent .notion-callout,
-    #slideContent .notion-quote {
-      font-size: 1.15rem !important;
-      line-height: 1.65 !important;
-    }
-    #slideContent .notion-code {
-      font-size: 1.0rem !important;
-    }
-    #slideContent .notion-inline-code {
-      font-size: 1.05rem !important;
-    }
-
-    /* 슬라이드 개별 제목 */
-    #slideTitle {
-      font-size: 1.35rem !important;
-      line-height: 1.4 !important;
-    }
-
-    /* 상단 목차 타이틀 */
-    #currentHeadingTitle {
-      font-size: 1.35rem !important;
-    }
-  }
-</style>
+  </style>
 </head>
 <body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden select-none md:select-auto">
 
   <!-- 2열 분리 상단 헤더 -->
   <header class="bg-white border-b border-slate-200 px-3 py-2 flex flex-col gap-2 shadow-xs z-30 flex-shrink-0">
     
-    <!-- 1열: 분류체계 선택 + 워크시트(도서) 선택 -->
+    <!-- 1열: 분류체계 선택 + 워크시트(도서) 선택 + 도서 통합 검색 버튼 -->
     <div class="flex items-center gap-1.5 w-full">
       <button onclick="toggleMobileSidebar()" class="lg:hidden p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition flex-shrink-0" title="목차 열기">
         <i class="fa-solid fa-bars text-base"></i>
@@ -173,19 +165,25 @@
         <i class="fa-solid fa-book-open-reader text-xs sm:text-sm"></i>
       </div>
 
-      <!-- 1단계: 도서 분류체계 (기본 빈 선택지) -->
-      <div class="relative w-36 sm:w-40 md:w-44 flex-shrink-0">
+      <!-- 1단계: 도서 분류체계 (도서 권수 포함) -->
+      <div class="relative w-40 sm:w-44 md:w-48 flex-shrink-0">
         <select id="genreSelectDropdown" onchange="onGenreChange(this.value)" class="w-full bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 font-bold text-xs text-indigo-900 rounded-lg px-2 py-1.5 pr-4 focus:outline-none focus:ring-1 focus:ring-indigo-400 cursor-pointer truncate shadow-xs">
           <option value="">📁 분야 선택</option>
         </select>
       </div>
 
-      <!-- 2단계: 도서 선택 (초기 비활성화) -->
+      <!-- 2단계: 도서 선택 -->
       <div class="relative flex-1 min-w-0">
         <select id="bookSelectDropdown" onchange="onBookChange(this.value)" disabled class="w-full bg-slate-50 hover:bg-slate-100 border border-slate-300 font-bold text-xs sm:text-sm text-slate-900 rounded-lg px-2.5 py-1.5 pr-6 focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer truncate shadow-xs disabled:opacity-60 disabled:cursor-not-allowed">
           <option value="">먼저 분야를 선택해주세요</option>
         </select>
       </div>
+
+      <!-- 도서 검색 퀵 버튼 -->
+      <button onclick="openBookSearchModal()" class="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 rounded-lg text-xs font-bold transition flex items-center gap-1 flex-shrink-0 shadow-xs" title="도서 전체 검색">
+        <i class="fa-solid fa-magnifying-glass text-[11px]"></i>
+        <span class="hidden sm:inline">도서 검색</span>
+      </button>
 
       <!-- 동기화 상태 배지 -->
       <span id="syncStatusBadge" class="hidden sm:inline-block text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 font-semibold flex-shrink-0">
@@ -195,8 +193,6 @@
 
     <!-- 2열: 저자/완독 현황 및 기능 버튼들 -->
     <div class="flex items-center justify-between gap-1.5 w-full">
-      
-      <!-- 도서 저자 및 완독률 -->
       <div class="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium min-w-0 flex-1 truncate pr-1">
         <span id="bookAuthorDisplay" class="truncate max-w-[100px] sm:max-w-[150px]">
           <i class="fa-solid fa-user-pen mr-0.5 text-slate-400"></i>저자
@@ -207,7 +203,6 @@
         </span>
       </div>
 
-      <!-- 기능 버튼 그룹 -->
       <div class="flex items-center gap-1 flex-shrink-0">
         <button onclick="handleUserAuthClick()" id="btnUserLoginToggle" class="px-2 py-1 text-[11px] font-bold rounded-lg border transition flex items-center gap-1 bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100 shadow-xs" title="회원 로그인/로그아웃">
           <i class="fa-solid fa-user text-[10px]"></i>
@@ -242,7 +237,6 @@
           <i class="fa-solid fa-gear text-xs"></i>
         </button>
       </div>
-
     </div>
   </header>
 
@@ -253,7 +247,6 @@
 
   <!-- 메인 레이아웃 -->
   <div class="flex-1 flex overflow-hidden relative">
-    
     <div id="mobileBackdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 hidden lg:hidden transition-opacity"></div>
 
     <!-- 좌측 목차 트리 사이드바 -->
@@ -274,7 +267,7 @@
         </div>
 
         <div class="relative">
-          <input type="text" id="treeSearchInput" oninput="filterTreeSearch(this.value)" placeholder="목차 검색..." class="w-full bg-white border border-slate-200 rounded-lg pl-7 pr-3 py-1.5 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+          <input type="text" id="treeSearchInput" oninput="filterTreeSearch(this.value)" placeholder="현재 도서 내 목차/본문 검색..." class="w-full bg-white border border-slate-200 rounded-lg pl-7 pr-3 py-1.5 text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none">
           <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-[11px] text-slate-400"></i>
         </div>
       </div>
@@ -379,7 +372,7 @@
               <div class="h-full flex flex-col items-center justify-center text-slate-400 text-xs sm:text-sm p-8 text-center">
                 <i class="fa-solid fa-layer-group text-3xl text-indigo-300 mb-3"></i>
                 <p class="font-bold text-slate-600 mb-1">도서 분류 체계를 선택해주세요</p>
-                <p class="text-xs text-slate-400">상단 왼쪽 드롭다운에서 읽고자 하는 분야를 선택하면 도서 목록이 표시됩니다.</p>
+                <p class="text-xs text-slate-400">상단 드롭다운에서 분야를 선택하거나 '도서 검색' 버튼으로 원하는 책을 찾아보세요.</p>
               </div>
             </div>
 
@@ -413,6 +406,44 @@
       </div>
 
     </main>
+  </div>
+
+  <!-- 도서 검색 및 바로가기 모달 -->
+  <div id="bookSearchModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-start sm:items-center justify-center hidden p-3 pt-12 sm:pt-3">
+    <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-slate-100 flex flex-col max-h-[85vh] overflow-hidden">
+      <!-- 헤더 및 검색창 -->
+      <div class="p-3.5 sm:p-4 border-b border-slate-100 bg-slate-50 flex-shrink-0">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800">
+            <i class="fa-solid fa-book-open text-emerald-600"></i>
+            <span>도서 통합 검색</span>
+          </div>
+          <button onclick="closeModal('bookSearchModal')" class="text-slate-400 hover:text-slate-600 p-1">
+            <i class="fa-solid fa-xmark text-sm"></i>
+          </button>
+        </div>
+
+        <div class="relative">
+          <input type="text" id="globalBookSearchInput" oninput="handleBookSearchQuery(this.value)" placeholder="검색할 도서명 또는 키워드를 입력하세요..." class="w-full bg-white border border-emerald-300 rounded-lg pl-8 pr-3 py-2 text-xs sm:text-sm font-semibold focus:ring-2 focus:ring-emerald-400 focus:outline-none">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 sm:top-3 text-xs text-emerald-600"></i>
+        </div>
+
+        <div class="flex items-center justify-between text-[11px] text-slate-500 mt-2 px-0.5">
+          <span id="searchResultCountText">검색어를 입력해주세요</span>
+          <span class="text-[10px] text-slate-400">클릭 시 해당 도서로 즉시 이동</span>
+        </div>
+      </div>
+
+      <!-- 도서 검색 결과 목록 (검색 전에는 비어 있음) -->
+      <div id="bookSearchResultList" class="flex-1 overflow-y-auto p-2 sm:p-3 space-y-1.5 custom-scrollbar">
+        <!-- 동적 렌더링 -->
+      </div>
+
+      <!-- 하단 닫기 바 -->
+      <div class="p-2 border-t border-slate-100 bg-slate-50 flex justify-end">
+        <button onclick="closeModal('bookSearchModal')" class="px-3 py-1 text-xs text-slate-600 hover:bg-slate-200 rounded font-semibold transition">닫기</button>
+      </div>
+    </div>
   </div>
 
   <!-- 모달 1: 슬라이드 신규 등록 모달 -->
@@ -600,20 +631,41 @@
       return GENRE_API_URLS[selectedGenre] || GENRE_API_URLS["종교"];
     }
 
-    // 1단계: 도서 분류체계(11대 분야) 초기화
+    // 1단계: 도서 분류체계(11대 분야) 초기화 및 등록 책 권수 계산 표시
     function initGenreDropdown() {
+      updateGenreDropdownCounts();
+      resetViewerToInitialState();
+    }
+
+    function updateGenreDropdownCounts() {
       const dropdown = document.getElementById("genreSelectDropdown");
       if (!dropdown) return;
+      const curVal = dropdown.value || selectedGenre;
+
       dropdown.innerHTML = `<option value="">📁 분야 선택</option>`;
 
       BOOK_GENRES.forEach(g => {
         const opt = document.createElement("option");
         opt.value = g;
-        opt.textContent = `📁 ${g}`;
+
+        let countText = "";
+        try {
+          const cachedStr = localStorage.getItem(`CACHE_LIST_${g}`);
+          if (cachedStr) {
+            const arr = JSON.parse(cachedStr);
+            if (Array.isArray(arr)) {
+              countText = ` (${arr.length}권)`;
+            }
+          }
+        } catch(e) {}
+
+        opt.textContent = `📁 ${g}${countText}`;
         dropdown.appendChild(opt);
       });
 
-      resetViewerToInitialState();
+      if (curVal && BOOK_GENRES.includes(curVal)) {
+        dropdown.value = curVal;
+      }
     }
 
     function resetViewerToInitialState() {
@@ -636,7 +688,7 @@
           <div class="h-full flex flex-col items-center justify-center text-slate-400 text-xs sm:text-sm p-8 text-center">
             <i class="fa-solid fa-layer-group text-3xl text-indigo-300 mb-3"></i>
             <p class="font-bold text-slate-600 mb-1">도서 분류 체계를 선택해주세요</p>
-            <p class="text-xs text-slate-400">상단 왼쪽 드롭다운에서 읽고자 하는 분야를 선택하면 도서 목록이 표시됩니다.</p>
+            <p class="text-xs text-slate-400">상단 드롭다운에서 분야를 선택하거나 '도서 검색' 버튼으로 원하는 책을 찾아보세요.</p>
           </div>
         `;
       }
@@ -683,7 +735,7 @@
       loadBookList();
     }
 
-    // 2단계: 도서 목록 로드 (캐시 우선 0초 렌더링 + 1회 자동 재시도)
+    // 2단계: 도서 목록 로드
     async function loadBookList(retryCount = 0) {
       if (!selectedGenre) return;
 
@@ -698,6 +750,7 @@
         try {
           availableBookTitles = JSON.parse(cachedListStr);
           populateBookDropdown(availableBookTitles, false);
+          updateGenreDropdownCounts();
         } catch(e) {
           localStorage.removeItem(listCacheKey);
         }
@@ -728,6 +781,7 @@
           availableBookTitles = json.bookTitles;
           localStorage.setItem(listCacheKey, JSON.stringify(availableBookTitles));
           populateBookDropdown(availableBookTitles, true);
+          updateGenreDropdownCounts();
 
           if (badge) {
             badge.textContent = "완료";
@@ -786,7 +840,7 @@
       }
     }
 
-    // 3단계: 도서 데이터 로드 (캐시 우선 0.01초 렌더링)
+    // 3단계: 도서 데이터 로드
     async function loadBookData(bookTitle, forceRefresh = false) {
       if (!bookTitle) return;
 
@@ -802,7 +856,6 @@
 
       const localKey = `CACHE_DATA_${selectedGenre}_${bookTitle}`;
 
-      // 1. 캐시가 있으면 즉시 화면 표시
       if (!forceRefresh) {
         const cachedBook = localStorage.getItem(localKey);
         if (cachedBook) {
@@ -885,6 +938,11 @@
       cloudBookmarks = json.bookmarks || {};
       cloudReadingProgress = json.readingProgress || {};
 
+      const bDropdown = document.getElementById("bookSelectDropdown");
+      if (bDropdown && bDropdown.value !== bookTitle) {
+        bDropdown.value = bookTitle;
+      }
+
       processCurrentBookTree();
     }
 
@@ -897,6 +955,8 @@
       keys.forEach(k => {
         if (k.startsWith("CACHE_")) localStorage.removeItem(k);
       });
+
+      updateGenreDropdownCounts();
 
       const dropdown = document.getElementById("bookSelectDropdown");
       const bTitle = dropdown ? dropdown.value : currentBookData.title;
@@ -1638,6 +1698,174 @@
           renderTree(currentBookData.tree);
           renderSlideViewer();
         }
+      }
+    }
+
+    // ==========================================
+    // 도서 검색 기능 (검색어 입력 시 결과만 노출)
+    // ==========================================
+    function openBookSearchModal() {
+      const modal = document.getElementById("bookSearchModal");
+      const input = document.getElementById("globalBookSearchInput");
+      const listCont = document.getElementById("bookSearchResultList");
+      const countText = document.getElementById("searchResultCountText");
+      if (!modal || !input) return;
+
+      openModal("bookSearchModal");
+      input.value = "";
+      
+      // 검색창 열었을 때 초기 상태: 책 목록을 나열하지 않고 안내 표시만 유지
+      if (countText) {
+        countText.textContent = "검색어를 입력해주세요";
+      }
+      if (listCont) {
+        listCont.innerHTML = `
+          <div class="p-8 text-center text-slate-400 text-xs sm:text-sm">
+            <i class="fa-solid fa-magnifying-glass text-xl mb-2 text-slate-300"></i>
+            <p class="font-medium text-slate-600">도서명을 검색해보세요</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">원하시는 책 제목의 일부를 입력하시면 결과가 표시됩니다.</p>
+          </div>
+        `;
+      }
+
+      setTimeout(() => input.focus(), 100);
+    }
+
+    function getAllRegisteredBooks() {
+      const bookList = [];
+      const seen = new Set();
+
+      // 1. 현재 분야의 도서
+      if (selectedGenre && availableBookTitles.length > 0) {
+        availableBookTitles.forEach(title => {
+          const key = `${selectedGenre}___${title}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            bookList.push({ genre: selectedGenre, title: title });
+          }
+        });
+      }
+
+      // 2. 캐시된 모든 분야의 도서 수집
+      BOOK_GENRES.forEach(g => {
+        try {
+          const cached = localStorage.getItem(`CACHE_LIST_${g}`);
+          if (cached) {
+            const arr = JSON.parse(cached);
+            if (Array.isArray(arr)) {
+              arr.forEach(title => {
+                const key = `${g}___${title}`;
+                if (!seen.has(key)) {
+                  seen.add(key);
+                  bookList.push({ genre: g, title: title });
+                }
+              });
+            }
+          }
+        } catch(e) {}
+      });
+
+      return bookList;
+    }
+
+    function handleBookSearchQuery(query) {
+      const q = (query || "").trim().toLowerCase();
+      const listCont = document.getElementById("bookSearchResultList");
+      const countText = document.getElementById("searchResultCountText");
+      if (!listCont) return;
+
+      // 검색어가 비어 있는 경우: 책 목록을 절대 나열하지 않음
+      if (!q) {
+        if (countText) countText.textContent = "검색어를 입력해주세요";
+        listCont.innerHTML = `
+          <div class="p-8 text-center text-slate-400 text-xs sm:text-sm">
+            <i class="fa-solid fa-magnifying-glass text-xl mb-2 text-slate-300"></i>
+            <p class="font-medium text-slate-600">도서명을 검색해보세요</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">원하시는 책 제목의 일부를 입력하시면 결과가 표시됩니다.</p>
+          </div>
+        `;
+        return;
+      }
+
+      // 검색어가 입력된 경우에만 필터링하여 일치하는 책 결과 노출
+      const allBooks = getAllRegisteredBooks();
+      const filtered = allBooks.filter(b => 
+        b.title.toLowerCase().includes(q) || 
+        b.genre.toLowerCase().includes(q)
+      );
+
+      if (countText) {
+        countText.textContent = `검색 결과: ${filtered.length}권`;
+      }
+
+      if (filtered.length === 0) {
+        listCont.innerHTML = `
+          <div class="p-8 text-center text-slate-400 text-xs sm:text-sm">
+            <i class="fa-solid fa-triangle-exclamation text-xl mb-2 text-amber-400"></i>
+            <p class="font-medium text-slate-600">'${escapeHtml(query)}'에 대한 검색 결과가 없습니다.</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">단어를 바꾸거나 다른 키워드로 검색해보세요.</p>
+          </div>
+        `;
+        return;
+      }
+
+      listCont.innerHTML = "";
+      filtered.forEach(item => {
+        const isCurrent = (item.genre === selectedGenre && item.title === currentBookData.title);
+        const card = document.createElement("div");
+        card.className = `p-2.5 rounded-xl border flex items-center justify-between cursor-pointer transition ${
+          isCurrent 
+            ? 'bg-emerald-50 border-emerald-300 text-emerald-950 font-bold shadow-xs' 
+            : 'bg-white hover:bg-slate-50 border-slate-200 text-slate-800'
+        }`;
+        
+        card.onclick = () => selectBookFromSearch(item.genre, item.title);
+
+        card.innerHTML = `
+          <div class="flex items-center gap-2 min-w-0 pr-2">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex-shrink-0">
+              📁 ${escapeHtml(item.genre)}
+            </span>
+            <div class="min-w-0">
+              <h4 class="text-xs sm:text-sm font-semibold truncate leading-tight">${escapeHtml(item.title)}</h4>
+              ${isCurrent ? `<span class="text-[9px] text-emerald-600 font-bold">현재 열려 있는 도서</span>` : ''}
+            </div>
+          </div>
+          <button class="px-2.5 py-1 text-[11px] font-bold rounded-lg border flex-shrink-0 transition ${
+            isCurrent ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-slate-100 hover:bg-emerald-600 hover:text-white text-slate-600 border-slate-200'
+          }">
+            열기 <i class="fa-solid fa-arrow-right text-[9px] ml-0.5"></i>
+          </button>
+        `;
+
+        listCont.appendChild(card);
+      });
+    }
+
+    function selectBookFromSearch(genre, bookTitle) {
+      closeModal('bookSearchModal');
+
+      if (selectedGenre !== genre) {
+        selectedGenre = genre;
+        localStorage.setItem("BOOK_SELECTED_GENRE", genre);
+        
+        const genreDropdown = document.getElementById("genreSelectDropdown");
+        if (genreDropdown) genreDropdown.value = genre;
+
+        const bookDropdown = document.getElementById("bookSelectDropdown");
+        if (bookDropdown) {
+          bookDropdown.disabled = false;
+          bookDropdown.innerHTML = `<option value="${escapeHtml(bookTitle)}">📚 ${escapeHtml(bookTitle)}</option>`;
+          bookDropdown.value = bookTitle;
+        }
+
+        loadBookList().then(() => {
+          loadBookData(bookTitle, false);
+        });
+      } else {
+        const bookDropdown = document.getElementById("bookSelectDropdown");
+        if (bookDropdown) bookDropdown.value = bookTitle;
+        loadBookData(bookTitle, false);
       }
     }
 
@@ -2665,6 +2893,12 @@
     }
 
     document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        closeModal("bookSearchModal");
+        closeModal("addDataModal");
+        closeModal("apiSettingModal");
+        closeModal("userLoginModal");
+      }
       const tag = document.activeElement.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       if (e.key === "ArrowLeft") navigateSlide(-1);
