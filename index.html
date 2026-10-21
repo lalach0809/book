@@ -434,10 +434,8 @@
         </div>
       </div>
 
-      <!-- 도서 검색 결과 목록 (검색 전에는 비어 있음) -->
-      <div id="bookSearchResultList" class="flex-1 overflow-y-auto p-2 sm:p-3 space-y-1.5 custom-scrollbar">
-        <!-- 동적 렌더링 -->
-      </div>
+      <!-- 도서 검색 결과 목록 -->
+      <div id="bookSearchResultList" class="flex-1 overflow-y-auto p-2 sm:p-3 space-y-1.5 custom-scrollbar"></div>
 
       <!-- 하단 닫기 바 -->
       <div class="p-2 border-t border-slate-100 bg-slate-50 flex justify-end">
@@ -591,7 +589,7 @@
       "사회과학": "https://script.google.com/macros/s/AKfycbxelwGE9U7rvj4GzPN1E2BaC2mu9HKYvUZ2HxUD8DTxOyh0HtiQI7kv3hA_q52nburzGA/exec",
       "언어": "https://script.google.com/macros/s/AKfycbziAs5sq1FeF1e_pIYnBGrSYELzm0XtCtVM21vhzAvnizWY9hRDNf_9dQF6QAO1cauM/exec",
       "역사": "https://script.google.com/macros/s/AKfycbyX7_mpsohU2a3b0vBCSuw1FGeYf_m4lO8n19MUF3G4hsrZqgseA55ACFSY5IElzKAS/exec",
-      "예술": "https://script.google.com/macros/s/AKfycbyM7AfYGuG0HdIurc-FA9xkTGTtnW8qJghI9UozcNEO53H4EeQKGbEZFcaQpdpQSYsq/exec",
+      "예술": "https://script.google.com/macros/s/AKfycbyM7AfYGuG0HdIurc-FA9xkTGTtnW8qJghI9UozcNEO53H4EeQKGbEZFcaQdpQSYsq/exec",
       "외국문학": "https://script.google.com/macros/s/AKfycbxgMI4JHJohqw31ChkgptG089UxMYKBxu2IxPpdc7paI1U6SrTavtZgAoTdHDdPWNfAUg/exec",
       "자연과학": "https://script.google.com/macros/s/AKfycbz6BFENjVDHUwH0dXwcHZCJg0xnyw4s4z-QoqO3h3yayyLphZ1FbC6ErOv8wSv0L74B/exec",
       "철학": "https://script.google.com/macros/s/AKfycbx0M6v5JfRdEH82N3w24-XlCfWjg8jtiIdBUomf0OjBLQggSJ8bMnMvoSvkvr-Ji4PYcw/exec",
@@ -631,7 +629,7 @@
       return GENRE_API_URLS[selectedGenre] || GENRE_API_URLS["종교"];
     }
 
-    // 1단계: 도서 분류체계(11대 분야) 초기화 및 등록 책 권수 계산 표시
+    // 1단계: 도서 분류체계(11대 분야) 초기화
     function initGenreDropdown() {
       updateGenreDropdownCounts();
       resetViewerToInitialState();
@@ -1701,9 +1699,7 @@
       }
     }
 
-    // ==========================================
-    // 도서 검색 기능 (검색어 입력 시 결과만 노출)
-    // ==========================================
+    // 도서 검색 기능
     function openBookSearchModal() {
       const modal = document.getElementById("bookSearchModal");
       const input = document.getElementById("globalBookSearchInput");
@@ -1714,10 +1710,7 @@
       openModal("bookSearchModal");
       input.value = "";
       
-      // 검색창 열었을 때 초기 상태: 책 목록을 나열하지 않고 안내 표시만 유지
-      if (countText) {
-        countText.textContent = "검색어를 입력해주세요";
-      }
+      if (countText) countText.textContent = "검색어를 입력해주세요";
       if (listCont) {
         listCont.innerHTML = `
           <div class="p-8 text-center text-slate-400 text-xs sm:text-sm">
@@ -1735,7 +1728,6 @@
       const bookList = [];
       const seen = new Set();
 
-      // 1. 현재 분야의 도서
       if (selectedGenre && availableBookTitles.length > 0) {
         availableBookTitles.forEach(title => {
           const key = `${selectedGenre}___${title}`;
@@ -1746,7 +1738,6 @@
         });
       }
 
-      // 2. 캐시된 모든 분야의 도서 수집
       BOOK_GENRES.forEach(g => {
         try {
           const cached = localStorage.getItem(`CACHE_LIST_${g}`);
@@ -1774,7 +1765,6 @@
       const countText = document.getElementById("searchResultCountText");
       if (!listCont) return;
 
-      // 검색어가 비어 있는 경우: 책 목록을 절대 나열하지 않음
       if (!q) {
         if (countText) countText.textContent = "검색어를 입력해주세요";
         listCont.innerHTML = `
@@ -1787,7 +1777,6 @@
         return;
       }
 
-      // 검색어가 입력된 경우에만 필터링하여 일치하는 책 결과 노출
       const allBooks = getAllRegisteredBooks();
       const filtered = allBooks.filter(b => 
         b.title.toLowerCase().includes(q) || 
@@ -2258,7 +2247,7 @@
           const cached = localStorage.getItem(localKey);
           if (cached) {
             const parsed = JSON.parse(cached);
-            parsed.bookmarks = cloudBookmarks;
+            parsed.readingProgress = cloudReadingProgress;
             localStorage.setItem(localKey, JSON.stringify(parsed));
           }
 
@@ -2438,7 +2427,9 @@
       }
     }
 
-    // TTS 음성 변환 로직
+    // ==========================================
+    // TTS 음성 변환 로직 (한자어 수사 및 쉼 처리)
+    // ==========================================
     function convertNumberToSinoKorean(numStr) {
       const num = parseInt(numStr, 10);
       if (isNaN(num)) return numStr;
@@ -2480,9 +2471,31 @@
       return result.trim();
     }
 
+    function convertDecimalToSinoKorean(decStr) {
+      const digitMap = { '0': '영', '1': '일', '2': '이', '3': '삼', '4': '사', '5': '오', '6': '육', '7': '칠', '8': '팔', '9': '구' };
+      if (decStr.includes('.')) {
+        const parts = decStr.split('.');
+        const intPart = convertNumberToSinoKorean(parts[0]);
+        const decimalPart = parts[1].split('').map(d => digitMap[d] || d).join('');
+        return `${intPart}점${decimalPart}`;
+      }
+      return convertNumberToSinoKorean(decStr);
+    }
+
     function cleanTextForSpeech(raw) {
       if (!raw) return "";
-      let t = raw;
+
+      // 1. 줄바꿈 처리: 각 줄의 끝에 구두점이 없으면 쉼표와 마침표를 넣어 호흡을 쉬어가도록 변환
+      let lines = raw.split(/\r?\n/);
+      lines = lines.map(line => {
+        let l = line.trim();
+        if (!l) return "";
+        if (!/[.,!?;:~]$/.test(l)) {
+          l += ", ";
+        }
+        return l;
+      });
+      let t = lines.filter(Boolean).join(" ");
 
       t = t.replace(/```[\s\S]*?```/g, " ");
       t = t.replace(/\([^)]*\)/g, " ");
@@ -2503,7 +2516,17 @@
       t = t.replace(/[→➔➜]/g, "에서");
       t = t.replace(/^>\s+/gm, "");
       t = t.replace(/^[💡📌⚠️ℹ️🚨📝✅🔍🎯📖🌱🕊️]\s*/gm, "");
+
+      // 1,000 등 쉼표 포함 숫자 정규화
       t = t.replace(/(\d+),(\d+)/g, "$1$2");
+
+      // 2. 거리, 중량, 부피, 넓이 등 단위 앞 숫자를 한자어 수사(일, 이, 삼...)로 치환
+      const unitPattern = /(\d+(?:\.\d+)?)\s*(km|m|cm|mm|kg|g|mg|l|ml|m²|km²|킬로미터|미터|센티미터|밀리미터|킬로그램|킬로그람|그램|밀리그램|리터|밀리리터|톤|평)/gi;
+      t = t.replace(unitPattern, (match, pNum, pUnit) => {
+        return convertDecimalToSinoKorean(pNum) + " " + pUnit;
+      });
+
+      // 일반 숫자 변환
       t = t.replace(/\d+/g, (match) => convertNumberToSinoKorean(match));
       t = t.replace(/\s+/g, " ");
       return t.trim();
@@ -2541,7 +2564,7 @@
       const cur = selectedLeafNode.slides[currentSlideIdx];
       const titleToRead = cleanTextForSpeech(cur.title || selectedLeafNode.title || "");
       const bodyToRead = cleanTextForSpeech(cur.body || "");
-      const fullText = `${titleToRead}.${bodyToRead}`;
+      const fullText = `${titleToRead}. ${bodyToRead}`;
 
       if (!fullText.trim()) {
         alert("슬라이드에 읽을 텍스트가 없습니다.");
