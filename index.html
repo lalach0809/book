@@ -251,6 +251,8 @@
 
     <!-- 좌측 목차 트리 사이드바 -->
     <aside id="mainSidebar" class="fixed lg:static inset-y-0 left-0 w-[85vw] sm:w-[420px] md:w-[480px] lg:w-[500px] bg-white border-r border-slate-200 flex flex-col z-50 lg:z-10 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out flex-shrink-0">
+      
+      <!-- 상단 컨트롤 영역 -->
       <div class="p-3 border-b border-slate-200 bg-slate-50 space-y-2 flex-shrink-0">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800">
@@ -258,8 +260,8 @@
             <span>도서 목차 구조</span>
           </div>
           <div class="flex items-center gap-1 text-[11px]">
-            <button onclick="toggleAllNodes(false)" class="px-2 py-0.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 rounded font-medium">펼치기</button>
-            <button onclick="toggleAllNodes(true)" class="px-2 py-0.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 rounded font-medium">접기</button>
+            <button onclick="toggleAllNodes(false)" class="px-2 py-0.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 rounded font-medium shadow-2xs">전체 펼치기</button>
+            <button onclick="toggleAllNodes(true)" class="px-2 py-0.5 bg-white border border-slate-200 hover:bg-slate-100 text-slate-600 rounded font-medium shadow-2xs">전체 접기</button>
             <button onclick="toggleMobileSidebar()" class="lg:hidden p-1 text-slate-400 hover:text-slate-700 ml-0.5">
               <i class="fa-solid fa-xmark text-sm"></i>
             </button>
@@ -272,8 +274,10 @@
         </div>
       </div>
 
+      <!-- 목차 트리 컨테이너 -->
       <div id="treeContainer" class="flex-1 overflow-y-auto p-2.5 space-y-1 custom-scrollbar"></div>
 
+      <!-- 하단 범례 바 -->
       <div class="p-2.5 bg-slate-50 border-t border-slate-200 text-[11px] text-slate-600 flex flex-wrap items-center justify-between gap-1 flex-shrink-0 font-medium">
         <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-purple-600 inline-block"></span>편</span>
         <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-600 inline-block"></span>장</span>
@@ -411,7 +415,6 @@
   <!-- 도서 검색 및 바로가기 모달 -->
   <div id="bookSearchModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-start sm:items-center justify-center hidden p-3 pt-12 sm:pt-3">
     <div class="bg-white rounded-2xl w-full max-w-lg shadow-2xl border border-slate-100 flex flex-col max-h-[85vh] overflow-hidden">
-      <!-- 헤더 및 검색창 -->
       <div class="p-3.5 sm:p-4 border-b border-slate-100 bg-slate-50 flex-shrink-0">
         <div class="flex items-center justify-between mb-2">
           <div class="flex items-center gap-1.5 text-xs sm:text-sm font-bold text-slate-800">
@@ -434,10 +437,8 @@
         </div>
       </div>
 
-      <!-- 도서 검색 결과 목록 -->
       <div id="bookSearchResultList" class="flex-1 overflow-y-auto p-2 sm:p-3 space-y-1.5 custom-scrollbar"></div>
 
-      <!-- 하단 닫기 바 -->
       <div class="p-2 border-t border-slate-100 bg-slate-50 flex justify-end">
         <button onclick="closeModal('bookSearchModal')" class="px-3 py-1 text-xs text-slate-600 hover:bg-slate-200 rounded font-semibold transition">닫기</button>
       </div>
@@ -446,7 +447,7 @@
 
   <!-- 모달 1: 슬라이드 신규 등록 모달 -->
   <div id="addDataModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 flex items-center justify-center hidden p-3">
-    <div class="bg-white rounded-2xl p-4 md:p-6 w-full max-w-lg shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto custom-scrollbar">
+    <div class="bg-white rounded-2xl p-4 md:p-6 w-full max-w-lg shadow-2xl border border-slate-100 max-h-[92vh] overflow-y-auto custom-scrollbar">
       <div class="flex items-center justify-between mb-2.5 pb-2 border-b border-slate-100">
         <h3 id="modalFormTitle" class="text-sm md:text-base font-bold text-slate-900 flex items-center gap-1.5">
           <i class="fa-solid fa-cloud-arrow-up text-emerald-600"></i> 새 슬라이드 등록
@@ -502,24 +503,51 @@
 
         <div class="grid grid-cols-4 gap-2">
           <div class="col-span-1">
-            <label class="font-bold text-slate-600 block mb-0.5">순번</label>
-            <input type="number" id="inSlideOrder" value="1" min="1" class="w-full p-1.5 border border-slate-300 rounded text-xs font-semibold">
+            <label class="font-bold text-slate-600 block mb-0.5">시작 순번</label>
+            <input type="number" id="inSlideOrder" value="1" min="1" class="w-full p-1.5 border border-slate-300 rounded text-xs font-semibold" title="첫 번째 생성될 슬라이드의 순번입니다">
           </div>
           <div class="col-span-3">
-            <label class="font-bold text-slate-600 block mb-0.5">슬라이드 제목</label>
-            <input type="text" id="inSlideTitle" class="w-full p-1.5 border border-slate-300 rounded text-xs">
+            <label class="font-bold text-slate-600 block mb-0.5">슬라이드 제목 (선택)</label>
+            <input type="text" id="inSlideTitle" class="w-full p-1.5 border border-slate-300 rounded text-xs" placeholder="직접 입력 시에만 저장됩니다 (공란 가능)">
           </div>
         </div>
 
-        <div>
-          <label class="font-bold text-slate-600 block mb-0.5">본문 내용</label>
-          <textarea id="inSlideBody" rows="5" class="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono leading-relaxed" placeholder="내용을 입력하세요."></textarea>
+        <!-- 노션 복사 원문 입력 영역 -->
+        <div class="space-y-1.5">
+          <div class="flex items-center justify-between">
+            <label class="font-bold text-slate-700 block text-xs">노션 복사 본문 붙여넣기</label>
+            <span class="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-semibold border border-emerald-200">
+              글머리기호 시작 ~ 새 본문 시작까지 = 1개 슬라이드
+            </span>
+          </div>
+          <textarea id="inSlideBody" rows="5" oninput="handleNotionBodyInput(this.value)" 
+            class="w-full p-2 border border-slate-300 rounded-lg text-xs font-mono leading-relaxed focus:ring-1 focus:ring-emerald-500 focus:outline-none" 
+            placeholder="노션에서 본문 전체를 복사하여 여기에 붙여넣으세요.&#10;&#10;첫 글머리기호(•, -, * 등)부터 새로운 대문단/새 본문 시작 직전까지가 슬라이드 순번 1이 되고, 다음 글머리기호 대문단을 만나면 순번 2, 3...으로 자동 분할됩니다."></textarea>
+        </div>
+
+        <!-- 자동 분할된 슬라이드 미리보기 -->
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-2.5 space-y-2">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="font-bold text-slate-700 flex items-center gap-1">
+              <i class="fa-solid fa-layer-group text-emerald-600"></i> 자동 분할될 슬라이드 목록 (<span id="parsedSlideCountBadge" class="text-emerald-600 font-bold">0개</span>)
+            </span>
+            <span class="text-slate-400 text-[10px]">시트에 각 행으로 연속 저장됩니다</span>
+          </div>
+          
+          <div id="parsedSlidesContainer" class="max-h-48 overflow-y-auto space-y-1.5 custom-scrollbar pr-1">
+            <div class="p-4 text-center text-slate-400 text-[11px] bg-white rounded-lg border border-slate-200">
+              본문을 입력하시면 글머리기호 구간별로 분할된 슬라이드 순번이 표시됩니다.
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="mt-3 flex justify-end gap-2 pt-2 border-t border-slate-100">
-        <button onclick="closeModal('addDataModal')" class="px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 rounded font-semibold">취소</button>
-        <button onclick="submitRowToSheet()" id="btnSubmitRow" class="px-3.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold">시트에 저장</button>
+      <div class="mt-3 flex items-center justify-between pt-2 border-t border-slate-100">
+        <span id="saveProgressStatus" class="text-[11px] font-semibold text-slate-500"></span>
+        <div class="flex gap-2">
+          <button onclick="closeModal('addDataModal')" class="px-3 py-1 text-xs text-slate-600 hover:bg-slate-100 rounded font-semibold">취소</button>
+          <button onclick="submitRowToSheet()" id="btnSubmitRow" class="px-3.5 py-1 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold shadow-xs">시트에 저장</button>
+        </div>
       </div>
     </div>
   </div>
@@ -625,11 +653,12 @@
     let isTTSPlaying = false;
     let isTTSPaused = false;
 
+    let parsedSlideList = [];
+
     function getActiveApiUrl() {
       return GENRE_API_URLS[selectedGenre] || GENRE_API_URLS["종교"];
     }
 
-    // 1단계: 도서 분류체계(11대 분야) 초기화
     function initGenreDropdown() {
       updateGenreDropdownCounts();
       resetViewerToInitialState();
@@ -733,7 +762,6 @@
       loadBookList();
     }
 
-    // 2단계: 도서 목록 로드
     async function loadBookList(retryCount = 0, targetBookTitle = null, targetLocation = null) {
       if (!selectedGenre) return;
 
@@ -838,7 +866,6 @@
       }
     }
 
-    // 3단계: 도서 데이터 로드 (targetLocation 인자 지원)
     async function loadBookData(bookTitle, forceRefresh = false, targetLocation = null) {
       if (!bookTitle) return;
 
@@ -1159,7 +1186,6 @@
 
       currentBookData.tree = [...frontMatter, ...mainTree, ...backMatter];
 
-      // 타깃 노드(방금 등록한 슬라이드 위치) 탐색
       let targetNode = null;
       let targetSlideIndex = 0;
 
@@ -1198,7 +1224,6 @@
           const sIdx = targetNode.slides.findIndex(s => s.order === orderNum);
           targetSlideIndex = sIdx !== -1 ? sIdx : targetNode.slides.length - 1;
 
-          // 타깃 노드의 모든 상위 노드 자동 펼치기
           function expandAncestors(nodes, targetId) {
             for (let n of nodes) {
               if (n.id === targetId) return true;
@@ -1271,6 +1296,7 @@
       container.appendChild(ul);
     }
 
+    // [수정됨] 개별적 선택 접기/펼치기가 가능한 노드 렌더링 함수
     function createNodeDOM(node, depth) {
       const li = document.createElement("li");
       const hasChildren = node.children && node.children.length > 0;
@@ -1280,63 +1306,74 @@
       const isDone = isNodeCompleted(node.id);
 
       const row = document.createElement("div");
-      row.className = `flex items-center justify-between px-2.5 py-2 rounded-lg text-xs cursor-pointer transition ${
+      row.className = `group flex items-center justify-between px-2 py-1.5 rounded-lg text-xs transition cursor-pointer select-none ${
         isSelected 
           ? `${theme.bg} border ${theme.border} font-bold ${theme.text} shadow-xs` 
           : 'hover:bg-slate-100 text-slate-700 border border-transparent'
       }`;
-      row.style.paddingLeft = `${depth * 12 + 6}px`;
+      row.style.paddingLeft = `${depth * 14 + 6}px`;
 
-      row.onclick = () => {
-        if (hasSlides || !hasChildren) {
+      // 행 전체 클릭 이벤트: 슬라이드가 있으면 뷰어로 열고, 없으면 본인 노드 개별 접기/펼치기
+      row.onclick = (e) => {
+        if (hasSlides) {
           selectNode(node);
           if (window.innerWidth < 1024) {
             toggleMobileSidebar();
           }
-        } else {
+        } else if (hasChildren) {
           node._collapsed = !node._collapsed;
           renderTree(currentBookData.tree);
         }
       };
 
+      // 좌측 영역 (배지 및 타이틀)
       const left = document.createElement("div");
       left.className = "flex items-center gap-1.5 overflow-hidden flex-1 min-w-0 pr-1";
 
+      left.innerHTML += `<span class="px-1.5 py-0.2 rounded text-[9px] font-bold border flex-shrink-0 ${theme.badge}">${node.type}</span>`;
+      left.innerHTML += `<span class="break-keep leading-snug font-medium flex-1 truncate ${isDone ? 'text-slate-900 font-bold' : ''}">${escapeHtml(node.title)}</span>`;
+      row.appendChild(left);
+
+      // 우측 영역 (슬라이드 권수 / 완독 배지 / 개별 접기·펼치기 토글 화살표)
+      const right = document.createElement("div");
+      right.className = "flex items-center gap-1 flex-shrink-0 ml-1";
+
+      if (isDone) {
+        right.innerHTML += `
+          <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-600 text-white shadow-2xs" title="완독 완료">
+            <i class="fa-solid fa-check text-[7px] mr-0.5"></i>완독
+          </span>
+        `;
+      }
+
+      if (hasSlides) {
+        right.innerHTML += `<span class="text-[9px] font-semibold ${theme.text}${theme.bg} border ${theme.border} px-1.5 py-0.2 rounded-full" title="등록된 슬라이드 수"><i class="fa-regular fa-clone mr-0.5"></i>${node.slides.length}</span>`;
+      }
+
+      // 자식 노드가 있는 경우: 개별 토글 화살표 버튼 추가 (클릭 시 해당 계층만 단독 토글)
       if (hasChildren) {
-        const toggleIcon = document.createElement("i");
-        toggleIcon.className = `fa-solid fa-chevron-${node._collapsed ? 'right' : 'down'} text-[10px] text-slate-400 w-3 cursor-pointer p-0.5 flex-shrink-0`;
-        toggleIcon.onclick = (e) => {
-          e.stopPropagation();
+        const toggleBtn = document.createElement("button");
+        toggleBtn.type = "button";
+        toggleBtn.className = `w-5 h-5 flex items-center justify-center rounded hover:bg-slate-200/70 text-slate-400 hover:text-slate-700 transition flex-shrink-0 ${
+          node._collapsed ? 'text-slate-400' : 'text-slate-600'
+        }`;
+        toggleBtn.title = node._collapsed ? "이 항목 하위 펼치기" : "이 항목 하위 접기";
+        toggleBtn.innerHTML = `<i class="fa-solid fa-chevron-${node._collapsed ? 'right' : 'down'} text-[10px]"></i>`;
+        
+        toggleBtn.onclick = (e) => {
+          e.stopPropagation(); // 슬라이드 전환 방지 및 순수 토글만 작동
           node._collapsed = !node._collapsed;
           renderTree(currentBookData.tree);
         };
-        left.appendChild(toggleIcon);
+        right.appendChild(toggleBtn);
       } else {
-        left.innerHTML += `<i class="fa-solid fa-circle text-[3px] text-slate-300 w-3 text-center flex-shrink-0"></i>`;
+        right.innerHTML += `<span class="w-5"></span>`; // 정렬용 여백
       }
 
-      left.innerHTML += `<span class="px-1.5 py-0.2 rounded text-[9px] font-bold border flex-shrink-0 ${theme.badge}">${node.type}</span>`;
-      left.innerHTML += `<span class="break-keep leading-snug font-medium flex-1 ${isDone ? 'text-slate-900 font-bold' : ''}">${escapeHtml(node.title)}</span>`;
-      row.appendChild(left);
-
-      if (hasSlides) {
-        const rightBadges = document.createElement("div");
-        rightBadges.className = "flex items-center gap-1 flex-shrink-0 ml-1";
-
-        if (isDone) {
-          rightBadges.innerHTML += `
-            <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full bg-emerald-600 text-white shadow-xs" title="완독 완료">
-              <i class="fa-solid fa-check text-[7px] mr-0.5"></i>완독
-            </span>
-          `;
-        }
-
-        rightBadges.innerHTML += `<span class="text-[9px] font-semibold ${theme.text}${theme.bg} border ${theme.border} px-1.5 py-0.2 rounded-full"><i class="fa-regular fa-clone mr-0.5"></i>${node.slides.length}</span>`;
-        row.appendChild(rightBadges);
-      }
-
+      row.appendChild(right);
       li.appendChild(row);
 
+      // 자식 노드 렌더링 (접히지 않았을 때만 노출)
       if (hasChildren && !node._collapsed) {
         const childUl = document.createElement("ul");
         childUl.className = "space-y-1 mt-0.5";
@@ -2101,6 +2138,119 @@
       }
     }
 
+    // 본문 블릿 및 문단 파싱 로직
+    function parseNotionTextIntoSlideBlocks(rawText, startOrder = 1) {
+      if (!rawText || !rawText.trim()) return [];
+
+      const lines = rawText.split(/\r?\n/);
+      const blocks = [];
+      let currentLines = [];
+      let inBulletSection = false;
+      let lastLineWasEmpty = false;
+
+      const isBulletLine = (str) => /^[•\-\*⁃]\s+/.test(str);
+      const isHeadingLine = (str) => /^#{1,4}\s+/.test(str);
+      const isCalloutOrDivider = (str) => /^([💡📌⚠️ℹ️🚨📝✅🔍🎯📖🌱🕊️]|(\-\-\-|\*\*\*|___))\s*/.test(str);
+
+      for (let i = 0; i < lines.length; i++) {
+        const rawLine = lines[i];
+        const trimmed = rawLine.trim();
+
+        if (!trimmed) {
+          if (inBulletSection && currentLines.length > 0) {
+            lastLineWasEmpty = true;
+          }
+          continue;
+        }
+
+        const isBullet = isBulletLine(trimmed);
+        const isHeading = isHeadingLine(trimmed);
+
+        if (!inBulletSection) {
+          if (isBullet) {
+            inBulletSection = true;
+            currentLines = [rawLine];
+            lastLineWasEmpty = false;
+          }
+        } else {
+          const isNewMajorBlock = isHeading || isCalloutOrDivider(trimmed) || (lastLineWasEmpty && !isBullet && !rawLine.startsWith(" ") && !rawLine.startsWith("\t"));
+          const isNewBulletBlockAfterGap = lastLineWasEmpty && isBullet;
+
+          if (isNewMajorBlock || isNewBulletBlockAfterGap) {
+            if (currentLines.length > 0) {
+              blocks.push(currentLines.join("\n").trim());
+              currentLines = [];
+            }
+
+            if (isBullet) {
+              inBulletSection = true;
+              currentLines.push(rawLine);
+            } else {
+              inBulletSection = false;
+            }
+          } else {
+            currentLines.push(rawLine);
+          }
+          lastLineWasEmpty = false;
+        }
+      }
+
+      if (currentLines.length > 0) {
+        blocks.push(currentLines.join("\n").trim());
+      }
+
+      if (blocks.length === 0 && rawText.trim()) {
+        blocks.push(rawText.trim());
+      }
+
+      return blocks.map((bodyText, idx) => ({
+        order: startOrder + idx,
+        body: bodyText
+      }));
+    }
+
+    function handleNotionBodyInput(text) {
+      const container = document.getElementById("parsedSlidesContainer");
+      const countBadge = document.getElementById("parsedSlideCountBadge");
+      const startOrderVal = parseInt(document.getElementById("inSlideOrder").value, 10) || 1;
+
+      parsedSlideList = parseNotionTextIntoSlideBlocks(text, startOrderVal);
+
+      if (countBadge) {
+        countBadge.textContent = `${parsedSlideList.length}개`;
+      }
+
+      if (!container) return;
+
+      if (parsedSlideList.length === 0) {
+        container.innerHTML = `
+          <div class="p-4 text-center text-slate-400 text-[11px] bg-white rounded-lg border border-slate-200">
+            글머리기호(•, -, * 등)를 포함한 본문을 입력하시면 순번별 슬라이드가 자동 구성됩니다.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = "";
+      parsedSlideList.forEach(item => {
+        const itemBox = document.createElement("div");
+        itemBox.className = "p-2 bg-white rounded-lg border border-emerald-200 shadow-2xs space-y-1";
+        
+        const previewExcerpt = item.body.length > 120 ? item.body.substring(0, 120) + "..." : item.body;
+
+        itemBox.innerHTML = `
+          <div class="flex items-center justify-between text-[11px] font-bold text-emerald-800">
+            <span class="flex items-center gap-1">
+              <i class="fa-regular fa-clone text-emerald-600"></i> 슬라이드 순번 ${item.order}
+            </span>
+            <span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">단일 셀 저장</span>
+          </div>
+          <div class="text-[11px] font-mono text-slate-600 whitespace-pre-wrap leading-relaxed bg-slate-50 p-1.5 rounded border border-slate-100">${escapeHtml(previewExcerpt)}</div>
+        `;
+        container.appendChild(itemBox);
+      });
+    }
+
     function openAddDataModal() {
       if (!isAdminLoggedIn) {
         alert("슬라이드 등록은 관리자만 가능합니다.");
@@ -2121,6 +2271,12 @@
 
       const inSlideBody = document.getElementById("inSlideBody");
       if (inSlideBody) inSlideBody.value = "";
+
+      const progressStatus = document.getElementById("saveProgressStatus");
+      if (progressStatus) progressStatus.textContent = "";
+
+      parsedSlideList = [];
+      handleNotionBodyInput("");
 
       onCategoryChange("content");
       openModal("addDataModal");
@@ -2163,86 +2319,104 @@
         part = "부록"; chapter = "부록"; section = "참고자료";
       }
 
-      const slideOrderVal = parseInt(document.getElementById("inSlideOrder").value, 10) || 1;
+      const rawBody = document.getElementById("inSlideBody").value.trim();
+      const userEnteredTitle = document.getElementById("inSlideTitle").value.trim();
+      const startOrderVal = parseInt(document.getElementById("inSlideOrder").value, 10) || 1;
 
-      const payload = {
-        action: "create",
-        bookTitle: bTitle,
-        author: author || "저자 미상",
-        part: part,
-        chapter: chapter,
-        section: section,
-        subsection: subsection,
-        slideOrder: slideOrderVal,
-        slideTitle: document.getElementById("inSlideTitle").value.trim(),
-        slideBody: document.getElementById("inSlideBody").value.trim()
-      };
+      if (parsedSlideList.length === 0) {
+        parsedSlideList = parseNotionTextIntoSlideBlocks(rawBody, startOrderVal);
+      }
 
-      // 새로 등록한 슬라이드의 위치 정보 기억
-      const newlyAddedLocation = {
+      if (parsedSlideList.length === 0) {
+        alert("등록할 본문 내용이 없습니다. 노션 본문을 입력해주세요.");
+        return;
+      }
+
+      const btn = document.getElementById("btnSubmitRow");
+      const progressStatus = document.getElementById("saveProgressStatus");
+      if (btn) btn.disabled = true;
+
+      const totalSlides = parsedSlideList.length;
+      let successCount = 0;
+
+      for (let i = 0; i < totalSlides; i++) {
+        const slideItem = parsedSlideList[i];
+        
+        let slideTitle = userEnteredTitle;
+        if (userEnteredTitle && totalSlides > 1) {
+          slideTitle = `${userEnteredTitle} (${i + 1})`;
+        }
+
+        const payload = {
+          action: "create",
+          bookTitle: bTitle,
+          author: author || "저자 미상",
+          part: part,
+          chapter: chapter,
+          section: section,
+          subsection: subsection,
+          slideOrder: slideItem.order,
+          slideTitle: slideTitle,
+          slideBody: slideItem.body
+        };
+
+        if (progressStatus) {
+          progressStatus.textContent = `슬라이드 순번 ${slideItem.order} 저장 중... (${i + 1}/${totalSlides})`;
+        }
+        if (btn) {
+          btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> (${i + 1}/${totalSlides})`;
+        }
+
+        try {
+          const res = await fetch(getActiveApiUrl(), {
+            method: "POST",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(payload)
+          });
+
+          const rawText = await res.text();
+          let json = null;
+          try {
+            json = JSON.parse(rawText);
+          } catch(e) {
+            if (res.ok && (rawText.includes("success") || rawText.includes("등록 완료"))) {
+              json = { success: true };
+            }
+          }
+
+          if (json && json.success) {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`순번 ${slideItem.order} 저장 오류:`, err);
+        }
+      }
+
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `시트에 저장`;
+      }
+      if (progressStatus) progressStatus.textContent = "";
+
+      alert(`총 ${totalSlides}개의 슬라이드 중 ${successCount}개가 시트에 등록되었습니다.`);
+      closeModal("addDataModal");
+
+      localStorage.removeItem(`CACHE_LIST_${selectedGenre}`);
+      localStorage.removeItem(`CACHE_DATA_${selectedGenre}_${bTitle}`);
+
+      const targetLoc = {
         cat: cat,
         part: part,
         chapter: chapter,
         section: section,
         subsection: subsection,
-        slideOrder: slideOrderVal
+        slideOrder: startOrderVal
       };
 
-      const btn = document.getElementById("btnSubmitRow");
-      if (btn) {
-        btn.disabled = true;
-        btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> 저장 중...`;
-      }
-
-      try {
-        const res = await fetch(getActiveApiUrl(), {
-          method: "POST",
-          headers: {
-            "Content-Type": "text/plain;charset=utf-8"
-          },
-          body: JSON.stringify(payload)
-        });
-
-        const rawText = await res.text();
-        let json = null;
-
-        try {
-          json = JSON.parse(rawText);
-        } catch (parseErr) {
-          if (res.ok && (rawText.includes("success") || rawText.includes("등록 완료"))) {
-            json = { success: true };
-          } else {
-            console.warn("응답 파싱 경고 (HTML 수신):", rawText);
-            json = { success: true, warning: "응답 지연이 있었으나 저장이 처리되었습니다." };
-          }
-        }
-
-        if (json && json.success) {
-          alert(json.warning || "새 슬라이드가 시트에 등록되었습니다.");
-          closeModal("addDataModal");
-          
-          localStorage.removeItem(`CACHE_LIST_${selectedGenre}`);
-          localStorage.removeItem(`CACHE_DATA_${selectedGenre}_${bTitle}`);
-
-          if (!availableBookTitles.includes(bTitle)) {
-            loadBookList(0, bTitle, newlyAddedLocation);
-          } else {
-            loadBookData(bTitle, true, newlyAddedLocation);
-          }
-        } else {
-          alert("저장 실패: " + (json ? json.error : "서버 응답 오류"));
-        }
-      } catch (err) {
-        console.error("통신 에러:", err);
-        alert("서버 응답 지연이 발생했습니다. 시트 새로고침을 진행합니다.");
-        localStorage.removeItem(`CACHE_DATA_${selectedGenre}_${bTitle}`);
-        closeModal("addDataModal");
-        loadBookData(bTitle, true, newlyAddedLocation);
-      } finally {
-        if (btn) {
-          btn.disabled = false;
-          btn.innerHTML = `시트에 저장`;
-        }
+      if (!availableBookTitles.includes(bTitle)) {
+        loadBookList(0, bTitle, targetLoc);
+      } else {
+        loadBookData(bTitle, true, targetLoc);
       }
     }
 
@@ -2500,9 +2674,7 @@
       }
     }
 
-    // ==========================================
     // TTS 음성 변환 로직
-    // ==========================================
     function convertNumberToSinoKorean(numStr) {
       const num = parseInt(numStr, 10);
       if (isNaN(num)) return numStr;
@@ -2699,7 +2871,6 @@
       }
     }
 
-    // 마크다운 파서
     function renderNotionFormattedText(raw) {
       if (!raw) return "<p class='text-slate-400 italic text-xs'>내용이 없습니다.</p>";
 
@@ -2895,6 +3066,7 @@
       renderTree(filtered);
     }
 
+    // 전체 펼치기 / 전체 접기
     function toggleAllNodes(collapse) {
       if (!currentBookData.tree) return;
       function setCol(nodes) {
