@@ -734,7 +734,7 @@
     }
 
     // 2단계: 도서 목록 로드
-    async function loadBookList(retryCount = 0) {
+    async function loadBookList(retryCount = 0, targetBookTitle = null, targetLocation = null) {
       if (!selectedGenre) return;
 
       const dropdown = document.getElementById("bookSelectDropdown");
@@ -747,7 +747,7 @@
       if (cachedListStr && retryCount === 0) {
         try {
           availableBookTitles = JSON.parse(cachedListStr);
-          populateBookDropdown(availableBookTitles, false);
+          populateBookDropdown(availableBookTitles, false, targetBookTitle, targetLocation);
           updateGenreDropdownCounts();
         } catch(e) {
           localStorage.removeItem(listCacheKey);
@@ -778,7 +778,7 @@
         if (json.success && Array.isArray(json.bookTitles) && json.bookTitles.length > 0) {
           availableBookTitles = json.bookTitles;
           localStorage.setItem(listCacheKey, JSON.stringify(availableBookTitles));
-          populateBookDropdown(availableBookTitles, true);
+          populateBookDropdown(availableBookTitles, true, targetBookTitle, targetLocation);
           updateGenreDropdownCounts();
 
           if (badge) {
@@ -787,7 +787,7 @@
           }
         } else {
           if (retryCount < 1) {
-            setTimeout(() => loadBookList(retryCount + 1), 800);
+            setTimeout(() => loadBookList(retryCount + 1, targetBookTitle, targetLocation), 800);
             return;
           }
           handleEmptyBooks(`[${selectedGenre}] 분야에 등록된 도서 시트가 없습니다.`);
@@ -795,7 +795,7 @@
       } catch (err) {
         console.error("도서 목록 로드 실패:", err);
         if (retryCount < 1) {
-          setTimeout(() => loadBookList(retryCount + 1), 1000);
+          setTimeout(() => loadBookList(retryCount + 1, targetBookTitle, targetLocation), 1000);
           return;
         }
 
@@ -811,7 +811,7 @@
       }
     }
 
-    function populateBookDropdown(titles, isFromServer = false) {
+    function populateBookDropdown(titles, isFromServer = false, targetBookTitle = null, targetLocation = null) {
       const dropdown = document.getElementById("bookSelectDropdown");
       if (!dropdown) return;
 
@@ -827,19 +827,19 @@
 
       const lastKey = `LAST_BOOK_${selectedGenre}`;
       const savedBook = localStorage.getItem(lastKey);
-      const targetBook = (savedBook && titles.includes(savedBook)) ? savedBook : titles[0];
+      let targetBook = targetBookTitle || ((savedBook && titles.includes(savedBook)) ? savedBook : titles[0]);
 
-      dropdown.value = currentVal && titles.includes(currentVal) ? currentVal : targetBook;
+      dropdown.value = currentVal && titles.includes(currentVal) && !targetBookTitle ? currentVal : targetBook;
 
       if (!isFromServer && targetBook) {
-        loadBookData(targetBook, false);
-      } else if (isFromServer && (!currentBookData.title || currentBookData.title !== dropdown.value)) {
-        loadBookData(dropdown.value, false);
+        loadBookData(targetBook, false, targetLocation);
+      } else if (isFromServer && (!currentBookData.title || currentBookData.title !== dropdown.value || targetLocation)) {
+        loadBookData(dropdown.value, false, targetLocation);
       }
     }
 
-    // 3단계: 도서 데이터 로드
-    async function loadBookData(bookTitle, forceRefresh = false) {
+    // 3단계: 도서 데이터 로드 (targetLocation 인자 지원)
+    async function loadBookData(bookTitle, forceRefresh = false, targetLocation = null) {
       if (!bookTitle) return;
 
       const badge = document.getElementById("syncStatusBadge");
@@ -859,7 +859,7 @@
         if (cachedBook) {
           try {
             const json = JSON.parse(cachedBook);
-            applyBookDataToUI(bookTitle, json);
+            applyBookDataToUI(bookTitle, json, targetLocation);
             if (badge) {
               badge.textContent = "완료";
               badge.className = "text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold";
@@ -898,7 +898,7 @@
 
         if (json.success) {
           localStorage.setItem(localKey, JSON.stringify(json));
-          applyBookDataToUI(bookTitle, json);
+          applyBookDataToUI(bookTitle, json, targetLocation);
           if (badge) {
             badge.textContent = "완료";
             badge.className = "text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-semibold";
@@ -925,7 +925,7 @@
       }
     }
 
-    function applyBookDataToUI(bookTitle, json) {
+    function applyBookDataToUI(bookTitle, json, targetLocation = null) {
       localStorage.setItem(`LAST_BOOK_${selectedGenre}`, bookTitle);
       currentBookData.title = bookTitle;
       currentBookData.rows = json.data || [];
@@ -941,7 +941,7 @@
         bDropdown.value = bookTitle;
       }
 
-      processCurrentBookTree();
+      processCurrentBookTree(targetLocation);
     }
 
     function onBookChange(newBookTitle) {
@@ -991,7 +991,7 @@
       updateOverallProgress();
     }
 
-    function processCurrentBookTree() {
+    function processCurrentBookTree(targetLocation = null) {
       const authorDisplay = document.getElementById("bookAuthorDisplay");
       if (authorDisplay) {
         authorDisplay.innerHTML = `<i class="fa-solid fa-user-pen mr-1 text-slate-400"></i>${escapeHtml(currentBookData.author)}`;
@@ -1158,12 +1158,73 @@
       backMatter.forEach(n => n.slides.sort((a,b) => a.order - b.order));
 
       currentBookData.tree = [...frontMatter, ...mainTree, ...backMatter];
+
+      // 타깃 노드(방금 등록한 슬라이드 위치) 탐색
+      let targetNode = null;
+      let targetSlideIndex = 0;
+
+      if (targetLocation) {
+        let expectedId = "";
+        if (targetLocation.cat === "author") expectedId = "front-author";
+        else if (targetLocation.cat === "prologue") expectedId = "front-prologue";
+        else if (targetLocation.cat === "epilogue") expectedId = "back-epilogue";
+        else if (targetLocation.cat === "appendix") expectedId = "back-appendix";
+        else {
+          const p = targetLocation.part || "본문";
+          const c = targetLocation.chapter;
+          const s = targetLocation.section;
+          const sub = targetLocation.subsection;
+          if (sub) expectedId = `sub-${p}-${c}-${s}-${sub}`;
+          else if (s) expectedId = `s-${p}-${c}-${s}`;
+          else if (c) expectedId = `c-${p}-${c}`;
+          else expectedId = `p-${p}`;
+        }
+
+        function findTarget(nodes) {
+          for (const n of nodes) {
+            if (n.id === expectedId) return n;
+            if (n.children && n.children.length > 0) {
+              const res = findTarget(n.children);
+              if (res) return res;
+            }
+          }
+          return null;
+        }
+
+        targetNode = findTarget(currentBookData.tree);
+
+        if (targetNode && targetNode.slides && targetNode.slides.length > 0) {
+          const orderNum = Number(targetLocation.slideOrder) || 1;
+          const sIdx = targetNode.slides.findIndex(s => s.order === orderNum);
+          targetSlideIndex = sIdx !== -1 ? sIdx : targetNode.slides.length - 1;
+
+          // 타깃 노드의 모든 상위 노드 자동 펼치기
+          function expandAncestors(nodes, targetId) {
+            for (let n of nodes) {
+              if (n.id === targetId) return true;
+              if (n.children && n.children.length > 0) {
+                if (expandAncestors(n.children, targetId)) {
+                  n._collapsed = false;
+                  return true;
+                }
+              }
+            }
+            return false;
+          }
+          expandAncestors(currentBookData.tree, targetNode.id);
+        }
+      }
+
       renderTree(currentBookData.tree);
       updateOverallProgress();
 
-      const firstSelectable = findFirstSelectable(currentBookData.tree);
-      if (firstSelectable) {
-        selectNode(firstSelectable);
+      if (targetNode && targetNode.slides && targetNode.slides.length > 0) {
+        selectNode(targetNode, targetSlideIndex);
+      } else {
+        const firstSelectable = findFirstSelectable(currentBookData.tree);
+        if (firstSelectable) {
+          selectNode(firstSelectable);
+        }
       }
     }
 
@@ -1286,11 +1347,11 @@
       return li;
     }
 
-    function selectNode(node) {
+    function selectNode(node, slideIdx = 0) {
       stopTTS();
       cancelInlineEdit();
       selectedLeafNode = node;
-      currentSlideIdx = 0;
+      currentSlideIdx = slideIdx;
       renderTree(currentBookData.tree);
       renderSlideViewer();
     }
@@ -2102,6 +2163,8 @@
         part = "부록"; chapter = "부록"; section = "참고자료";
       }
 
+      const slideOrderVal = parseInt(document.getElementById("inSlideOrder").value, 10) || 1;
+
       const payload = {
         action: "create",
         bookTitle: bTitle,
@@ -2110,9 +2173,19 @@
         chapter: chapter,
         section: section,
         subsection: subsection,
-        slideOrder: parseInt(document.getElementById("inSlideOrder").value, 10) || 1,
+        slideOrder: slideOrderVal,
         slideTitle: document.getElementById("inSlideTitle").value.trim(),
         slideBody: document.getElementById("inSlideBody").value.trim()
+      };
+
+      // 새로 등록한 슬라이드의 위치 정보 기억
+      const newlyAddedLocation = {
+        cat: cat,
+        part: part,
+        chapter: chapter,
+        section: section,
+        subsection: subsection,
+        slideOrder: slideOrderVal
       };
 
       const btn = document.getElementById("btnSubmitRow");
@@ -2152,9 +2225,9 @@
           localStorage.removeItem(`CACHE_DATA_${selectedGenre}_${bTitle}`);
 
           if (!availableBookTitles.includes(bTitle)) {
-            loadBookList();
+            loadBookList(0, bTitle, newlyAddedLocation);
           } else {
-            loadBookData(bTitle, true);
+            loadBookData(bTitle, true, newlyAddedLocation);
           }
         } else {
           alert("저장 실패: " + (json ? json.error : "서버 응답 오류"));
@@ -2164,7 +2237,7 @@
         alert("서버 응답 지연이 발생했습니다. 시트 새로고침을 진행합니다.");
         localStorage.removeItem(`CACHE_DATA_${selectedGenre}_${bTitle}`);
         closeModal("addDataModal");
-        loadBookData(bTitle, true);
+        loadBookData(bTitle, true, newlyAddedLocation);
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -2428,7 +2501,7 @@
     }
 
     // ==========================================
-    // TTS 음성 변환 로직 (한자어 수사 및 쉼 처리)
+    // TTS 음성 변환 로직
     // ==========================================
     function convertNumberToSinoKorean(numStr) {
       const num = parseInt(numStr, 10);
@@ -2485,7 +2558,6 @@
     function cleanTextForSpeech(raw) {
       if (!raw) return "";
 
-      // 1. 줄바꿈 처리: 각 줄의 끝에 구두점이 없으면 쉼표와 마침표를 넣어 호흡을 쉬어가도록 변환
       let lines = raw.split(/\r?\n/);
       lines = lines.map(line => {
         let l = line.trim();
@@ -2517,16 +2589,13 @@
       t = t.replace(/^>\s+/gm, "");
       t = t.replace(/^[💡📌⚠️ℹ️🚨📝✅🔍🎯📖🌱🕊️]\s*/gm, "");
 
-      // 1,000 등 쉼표 포함 숫자 정규화
       t = t.replace(/(\d+),(\d+)/g, "$1$2");
 
-      // 2. 거리, 중량, 부피, 넓이 등 단위 앞 숫자를 한자어 수사(일, 이, 삼...)로 치환
       const unitPattern = /(\d+(?:\.\d+)?)\s*(km|m|cm|mm|kg|g|mg|l|ml|m²|km²|킬로미터|미터|센티미터|밀리미터|킬로그램|킬로그람|그램|밀리그램|리터|밀리리터|톤|평)/gi;
       t = t.replace(unitPattern, (match, pNum, pUnit) => {
         return convertDecimalToSinoKorean(pNum) + " " + pUnit;
       });
 
-      // 일반 숫자 변환
       t = t.replace(/\d+/g, (match) => convertNumberToSinoKorean(match));
       t = t.replace(/\s+/g, " ");
       return t.trim();
