@@ -2741,10 +2741,10 @@
       });
       let t = lines.filter(Boolean).join(" ");
 
-      t = t.replace(/```[\s\S]*?```/g, " ");
-      t = t.replace(/\([^)]*\)/g, " ");
+t = t.replace(/```[\s\S]*?```/g, " ");
+      t = t.replace(/[()（）]/g, " "); // 괄호 기호만 공백으로 바꾸고 안의 내용은 그대로 읽음
       t = t.replace(/\[[^\]]*\]/g, " ");
-      t = t.replace(/（[^）]*）/g, " ");
+
       t = t.replace(/%/g, " 퍼센트 ");
       t = t.replace(/[\/\\—–―~|&_]/g, " ");
       t = t.replace(/[-]/g, " ");
