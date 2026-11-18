@@ -245,7 +245,7 @@
           <span id="userLoginText">로그인</span>
         </button>
 
-        <button onclick="goToBookmark()" id="btnGoBookmark" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[11px] font-bold rounded-lg transition flex items-center gap-1 shadow-xs" title="책갈피 이동">
+        <button onclick="goToBookmark()" id="btnGoBookmark" class="px-2 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-[11px] font-bold rounded-lg transition flex items-center gap-1 shadow-xs" title="자동 저장된 직전 책갈피로 이동">
           <i class="fa-solid fa-bookmark text-amber-600 text-xs"></i>
           <span class="hidden sm:inline">책갈피</span>
         </button>
@@ -348,10 +348,6 @@
             <h2 id="currentHeadingTitle" class="text-sm sm:text-base md:text-lg font-bold truncate text-stone-800">
               항목 제목
             </h2>
-
-            <button onclick="toggleCurrentBookmark()" id="btnBookmarkToggle" class="p-1 text-stone-400 hover:text-amber-500 rounded transition flex-shrink-0" title="책갈피">
-              <i id="bookmarkIcon" class="fa-regular fa-bookmark text-sm sm:text-base"></i>
-            </button>
           </div>
 
           <div class="flex items-center gap-1 sm:gap-1.5 flex-shrink-0">
@@ -1280,11 +1276,11 @@
       updateOverallProgress();
 
       if (targetNode && targetNode.slides && targetNode.slides.length > 0) {
-        selectNode(targetNode, targetSlideIndex);
+        selectNode(targetNode, targetSlideIndex, false);
       } else {
         const firstSelectable = findFirstSelectable(currentBookData.tree);
         if (firstSelectable) {
-          selectNode(firstSelectable);
+          selectNode(firstSelectable, 0, false);
         }
       }
     }
@@ -1350,7 +1346,7 @@
 
       row.onclick = (e) => {
         if (hasSlides) {
-          selectNode(node);
+          selectNode(node, 0, true);
           if (window.innerWidth < 1024) {
             toggleMobileSidebar();
           }
@@ -1414,7 +1410,14 @@
       return li;
     }
 
-    function selectNode(node, slideIdx = 0) {
+    function selectNode(node, slideIdx = 0, recordPrev = true) {
+      if (recordPrev && selectedLeafNode && selectedLeafNode.slides && selectedLeafNode.slides.length > 0) {
+        const isDifferentPosition = (selectedLeafNode.id !== node.id) || (currentSlideIdx !== slideIdx);
+        if (isDifferentPosition) {
+          recordPreviousSlideBookmark(selectedLeafNode, currentSlideIdx);
+        }
+      }
+
       stopTTS();
       cancelInlineEdit();
       selectedLeafNode = node;
@@ -1780,7 +1783,13 @@
             idx === currentSlideIdx ? `${theme.dotColor} w-3.5 sm:w-4` : 'bg-[#d6ccb8] w-1.5 hover:bg-stone-400'
           }`;
           b.title = `슬라이드 ${idx + 1} 이동`;
-          b.onclick = () => { currentSlideIdx = idx; renderSlideViewer(); };
+          b.onclick = () => {
+            if (currentSlideIdx !== idx && selectedLeafNode) {
+              recordPreviousSlideBookmark(selectedLeafNode, currentSlideIdx);
+            }
+            currentSlideIdx = idx;
+            renderSlideViewer();
+          };
           dots.appendChild(b);
         });
       }
@@ -1795,10 +1804,14 @@
       stopTTS();
       cancelInlineEdit();
 
+      const prevNode = selectedLeafNode;
+      const prevIdx = currentSlideIdx;
+
       const slides = selectedLeafNode.slides;
       const targetIdx = currentSlideIdx + dir;
 
       if (targetIdx >= 0 && targetIdx < slides.length) {
+        recordPreviousSlideBookmark(prevNode, prevIdx);
         currentSlideIdx = targetIdx;
         renderSlideViewer();
         return;
@@ -1809,6 +1822,7 @@
 
       if (dir > 0 && targetIdx >= slides.length) {
         if (nodeIdx !== -1 && nodeIdx < allNodes.length - 1) {
+          recordPreviousSlideBookmark(prevNode, prevIdx);
           selectedLeafNode = allNodes[nodeIdx + 1];
           currentSlideIdx = 0;
           renderTree(currentBookData.tree);
@@ -1819,6 +1833,7 @@
 
       if (dir < 0 && targetIdx < 0) {
         if (nodeIdx > 0) {
+          recordPreviousSlideBookmark(prevNode, prevIdx);
           selectedLeafNode = allNodes[nodeIdx - 1];
           currentSlideIdx = Math.max(0, (selectedLeafNode.slides ? selectedLeafNode.slides.length - 1 : 0));
           renderTree(currentBookData.tree);
@@ -2450,105 +2465,92 @@
       }
     }
 
-    // 책갈피 기능
-    function updateBookmarkButtonUI() {
-      const icon = document.getElementById("bookmarkIcon");
-      const btn = document.getElementById("btnBookmarkToggle");
-      if (!icon || !btn || !selectedLeafNode) return;
-
-      const userBm = CURRENT_USER_ID && cloudBookmarks[CURRENT_USER_ID] && cloudBookmarks[CURRENT_USER_ID][currentBookData.title];
-      if (userBm && userBm.nodeId === selectedLeafNode.id && userBm.slideIdx === currentSlideIdx) {
-        icon.className = "fa-solid fa-bookmark text-amber-500 text-sm sm:text-base";
-        btn.title = `회원 ${CURRENT_USER_ID}번 책갈피 해제`;
-      } else {
-        icon.className = "fa-regular fa-bookmark text-stone-400 hover:text-amber-500 text-sm sm:text-base";
-        btn.title = CURRENT_USER_ID ? `회원 ${CURRENT_USER_ID}번 책갈피 꽂기` : `책갈피 꽂기 (로그인 필요)`;
+    // 자동 책갈피 기능 (열람한 마지막 슬라이드 이전 슬라이드 자동 저장)
+    function getStoredBookmarkForCurrentBook() {
+      if (!currentBookData.title) return null;
+      if (CURRENT_USER_ID) {
+        const cloudBm = cloudBookmarks[CURRENT_USER_ID] && cloudBookmarks[CURRENT_USER_ID][currentBookData.title];
+        if (cloudBm) return cloudBm;
+      }
+      try {
+        const localStr = localStorage.getItem(`LOCAL_AUTO_BOOKMARK_${selectedGenre}_${currentBookData.title}`);
+        return localStr ? JSON.parse(localStr) : null;
+      } catch (e) {
+        return null;
       }
     }
 
-    async function toggleCurrentBookmark() {
-      if (!CURRENT_USER_ID) {
-        alert("책갈피를 사용하려면 먼저 회원 로그인이 필요합니다.");
-        openUserLoginModal();
+    function updateBookmarkButtonUI() {
+      const btn = document.getElementById("btnGoBookmark");
+      if (!btn) return;
+      const bm = getStoredBookmarkForCurrentBook();
+      if (bm && bm.nodeId) {
+        btn.title = `책갈피 이동: ${bm.nodeTitle || ''} (${(bm.slideIdx || 0) + 1}P)`;
+      } else {
+        btn.title = "자동 저장된 직전 책갈피로 이동";
+      }
+    }
+
+    function recordPreviousSlideBookmark(prevNode, prevSlideIdx) {
+      if (!prevNode || !currentBookData.title) return;
+      if (!prevNode.slides || prevNode.slides.length === 0) return;
+
+      const safeIdx = Math.max(0, Math.min(prevSlideIdx, prevNode.slides.length - 1));
+      const existing = getStoredBookmarkForCurrentBook();
+      if (existing && existing.nodeId === prevNode.id && existing.slideIdx === safeIdx) {
         return;
       }
-      if (!selectedLeafNode || !currentBookData.title) return;
-      const btn = document.getElementById("btnBookmarkToggle");
-      if (btn) btn.disabled = true;
 
-      const userBm = cloudBookmarks[CURRENT_USER_ID] && cloudBookmarks[CURRENT_USER_ID][currentBookData.title];
-      const isAlreadyBookmarked = userBm && userBm.nodeId === selectedLeafNode.id && userBm.slideIdx === currentSlideIdx;
-
-      const payload = {
-        action: "save_bookmark",
-        userId: CURRENT_USER_ID,
+      const bmData = {
+        userId: CURRENT_USER_ID || "guest",
         bookTitle: currentBookData.title,
-        clear: isAlreadyBookmarked,
-        nodeId: selectedLeafNode.id,
-        nodeTitle: selectedLeafNode.title,
-        slideIdx: currentSlideIdx
+        nodeId: prevNode.id,
+        nodeTitle: prevNode.title,
+        slideIdx: safeIdx
       };
 
+      // 로컬 즉시 저장 (비로그인 상태 포함)
       try {
-        const res = await fetch(getActiveApiUrl(), {
+        localStorage.setItem(`LOCAL_AUTO_BOOKMARK_${selectedGenre}_${currentBookData.title}`, JSON.stringify(bmData));
+      } catch (e) {}
+
+      // 회원 로그인 시 클라우드 캐시 및 시트 백그라운드 동기화
+      if (CURRENT_USER_ID) {
+        if (!cloudBookmarks[CURRENT_USER_ID]) cloudBookmarks[CURRENT_USER_ID] = {};
+        cloudBookmarks[CURRENT_USER_ID][currentBookData.title] = bmData;
+
+        const localKey = `CACHE_DATA_${selectedGenre}_${currentBookData.title}`;
+        const cached = localStorage.getItem(localKey);
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            parsed.bookmarks = cloudBookmarks;
+            localStorage.setItem(localKey, JSON.stringify(parsed));
+          } catch (e) {}
+        }
+
+        fetch(getActiveApiUrl(), {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload)
-        });
-
-        const rawText = await res.text();
-        let json = null;
-        try {
-          json = JSON.parse(rawText);
-        } catch (e) {
-          if (res.ok) json = { success: true };
-        }
-
-        if (json && json.success) {
-          if (!cloudBookmarks[CURRENT_USER_ID]) cloudBookmarks[CURRENT_USER_ID] = {};
-          if (isAlreadyBookmarked) {
-            delete cloudBookmarks[CURRENT_USER_ID][currentBookData.title];
-            alert(`[회원 ${CURRENT_USER_ID}번] 책갈피가 해제되었습니다.`);
-          } else {
-            cloudBookmarks[CURRENT_USER_ID][currentBookData.title] = {
-              userId: CURRENT_USER_ID,
-              bookTitle: currentBookData.title,
-              nodeId: selectedLeafNode.id,
-              nodeTitle: selectedLeafNode.title,
-              slideIdx: currentSlideIdx
-            };
-            alert(`[회원 ${CURRENT_USER_ID}번] 책갈피가 저장되었습니다.`);
-          }
-
-          const localKey = `CACHE_DATA_${selectedGenre}_${currentBookData.title}`;
-          const cached = localStorage.getItem(localKey);
-          if (cached) {
-            const parsed = JSON.parse(cached);
-            parsed.readingProgress = cloudReadingProgress;
-            localStorage.setItem(localKey, JSON.stringify(parsed));
-          }
-
-          updateBookmarkButtonUI();
-        } else {
-          alert("책갈피 실패: " + ((json && json.error) || "서버 응답 오류"));
-        }
-      } catch (err) {
-        alert("통신 오류: " + err.message);
-      } finally {
-        if (btn) btn.disabled = false;
+          body: JSON.stringify({
+            action: "save_bookmark",
+            userId: CURRENT_USER_ID,
+            bookTitle: currentBookData.title,
+            clear: false,
+            nodeId: prevNode.id,
+            nodeTitle: prevNode.title,
+            slideIdx: safeIdx
+          })
+        }).catch(err => console.error("자동 책갈피 동기화 오류:", err));
       }
+
+      updateBookmarkButtonUI();
     }
 
     function goToBookmark() {
-      if (!CURRENT_USER_ID) {
-        alert("책갈피로 이동하려면 먼저 상단에서 로그인해주세요.");
-        openUserLoginModal();
-        return;
-      }
-
-      const userBm = cloudBookmarks[CURRENT_USER_ID] && cloudBookmarks[CURRENT_USER_ID][currentBookData.title];
-      if (!userBm) {
-        alert(`회원 ${CURRENT_USER_ID}번의 '${currentBookData.title}' 책갈피가 없습니다.`);
+      const userBm = getStoredBookmarkForCurrentBook();
+      if (!userBm || !userBm.nodeId) {
+        alert(`'${currentBookData.title || "현재 도서"}'에 자동 기록된 직전 책갈피가 없습니다.`);
         return;
       }
 
@@ -2567,12 +2569,7 @@
 
       const targetNode = findNode(currentBookData.tree, userBm.nodeId);
       if (targetNode) {
-        stopTTS();
-        cancelInlineEdit();
-        selectedLeafNode = targetNode;
-        currentSlideIdx = userBm.slideIdx || 0;
-        renderTree(currentBookData.tree);
-        renderSlideViewer();
+        selectNode(targetNode, userBm.slideIdx || 0, true);
       } else {
         alert("책갈피가 지정된 항목을 찾을 수 없습니다.");
       }
@@ -2938,6 +2935,7 @@
       // 현재 슬라이드에 읽을 텍스트가 비어있는 경우 다음 슬라이드로 자동 이동 처리
       if (segments.length === 0) {
         if (currentSlideIdx < selectedLeafNode.slides.length - 1) {
+          recordPreviousSlideBookmark(selectedLeafNode, currentSlideIdx);
           currentSlideIdx++;
           renderSlideViewer();
           startReadingCurrentSlide(false);
@@ -3004,6 +3002,7 @@
           selectedLeafNode.slides &&
           currentSlideIdx < selectedLeafNode.slides.length - 1
         ) {
+          recordPreviousSlideBookmark(selectedLeafNode, currentSlideIdx);
           currentSlideIdx++;
           renderSlideViewer();
 
