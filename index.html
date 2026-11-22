@@ -656,7 +656,6 @@
       "총류": "https://script.google.com/macros/s/AKfycbzKGn2zNpYVUdA3tySgD-SVKbZqBHO1fx-9Lljli0rx0oSrsP-h04nmawRA80fmckeC/exec",
       "한국문학": "https://script.google.com/macros/s/AKfycbw9p1OmipoctyP1tZJ4dOuDJUCFzyVgljfrE2z9Zw5m7l0oXjo-TkenJqiF78FOjihD/exec"
     };
-
     const BOOK_GENRES = [
       "종교", "철학", "사회과학", "자연과학", "기술과학", 
       "예술", "언어", "한국문학", "외국문학", "역사", "총류"
@@ -1050,7 +1049,7 @@
       updateOverallProgress();
     }
 
-    function processCurrentBookTree(targetLocation = null) {
+function processCurrentBookTree(targetLocation = null) {
       const authorDisplay = document.getElementById("bookAuthorDisplay");
       if (authorDisplay) {
         authorDisplay.innerHTML = `<i class="fa-solid fa-user-pen mr-1 text-stone-400"></i>${escapeHtml(currentBookData.author)}`;
@@ -1061,17 +1060,16 @@
       const backMatter = [];
       const partMap = new Map();
 
-      const isAuthorKeyword = (s) => /지은이|저자\s*소개|author/i.test(s);
-      const isPrologueKeyword = (s) => /프롤로그|들어가는\s*글|머리말|서문|여는\s*글|추천사|prologue|preface/i.test(s);
-      const isEpilogueKeyword = (s) => /에필로그|맺음말|나가는\s*글|닫는\s*글|후기|epilogue/i.test(s);
-      const isAppendixKeyword = (s) => /부록|참고자료|주석|appendix/i.test(s);
+      const isAuthorKeyword = (s) => /^(지은이(\s*소개)?|저자\s*소개|author)(\s*[:\-].*)?$/i.test(s);
+      const isPrologueKeyword = (s) => /^(프롤로그|들어가는\s*글|머리말|서문|여는\s*글|추천사|prologue|preface)(\s*[:\-].*)?$/i.test(s);
+      const isEpilogueKeyword = (s) => /^(에필로그|맺음말|나가는\s*글|닫는\s*글|(저자|옮긴이|역자|편집자)?\s*후기|epilogue)(\s*[:\-].*)?$/i.test(s);
+      const isAppendixKeyword = (s) => /^(부록|참고자료|주석|appendix)(\s*[:\-].*)?$/i.test(s);
 
       rows.forEach(r => {
         const partStr = (r.part || '').trim();
         const chapStr = (r.chapter || '').trim();
         const secStr = (r.section || '').trim();
         const subStr = (r.subsection || '').trim();
-        const fullStr = `${partStr} ${chapStr}${secStr}`;
 
         const slideItem = {
           rowIndex: r.rowIndex,
@@ -1082,7 +1080,7 @@
           parentType: ""
         };
 
-        if (isAuthorKeyword(fullStr)) {
+        if (isAuthorKeyword(partStr)) {
           let node = frontMatter.find(n => n.type === "지은이");
           if (!node) {
             node = { id: `front-author`, type: "지은이", title: partStr || "지은이 소개", slides: [], children: [] };
@@ -1093,7 +1091,7 @@
           return;
         }
 
-        if (isPrologueKeyword(fullStr)) {
+        if (isPrologueKeyword(partStr)) {
           let node = frontMatter.find(n => n.type === "프롤로그");
           if (!node) {
             node = { id: `front-prologue`, type: "프롤로그", title: partStr || "프롤로그", slides: [], children: [] };
@@ -1104,7 +1102,7 @@
           return;
         }
 
-        if (isEpilogueKeyword(fullStr)) {
+        if (isEpilogueKeyword(partStr)) {
           let node = backMatter.find(n => n.type === "에필로그");
           if (!node) {
             node = { id: `back-epilogue`, type: "에필로그", title: partStr || "에필로그", slides: [], children: [] };
@@ -1115,7 +1113,7 @@
           return;
         }
 
-        if (isAppendixKeyword(fullStr)) {
+        if (isAppendixKeyword(partStr)) {
           let node = backMatter.find(n => n.type === "부록");
           if (!node) {
             node = { id: `back-appendix`, type: "부록", title: partStr || "부록", slides: [], children: [] };
@@ -1284,7 +1282,6 @@
         }
       }
     }
-
     function findFirstSelectable(nodes) {
       if (!nodes || nodes.length === 0) return null;
       for (const n of nodes) {
@@ -3023,7 +3020,7 @@
       const seg = ttsSegments[currentSegmentIndex];
       ttsUtterance = new SpeechSynthesisUtterance(seg.text);
       ttsUtterance.lang = seg.lang;
-      ttsUtterance.rate = 1.0;
+      ttsUtterance.rate = 1.25;
       ttsUtterance.pitch = 1.0;
 
       if (seg.lang === "en-US") {
