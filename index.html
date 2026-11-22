@@ -513,30 +513,33 @@
         <div id="contentHierarchyFields" class="space-y-2 bg-stone-50 p-2 rounded-xl border border-stone-200">
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="font-bold text-stone-600 block mb-0.5">편 (Part) <span class="text-purple-600">*필수</span></label>
-              <input type="text" id="inPart" class="w-full p-1 border border-stone-300 rounded text-xs" placeholder="예: 1부 고통과 마주하다">
+              <label class="font-bold text-stone-600 block mb-0.5">편 (Part) <span class="text-emerald-600 font-normal">(공란 시 자동분류)</span></label>
+              <input type="text" id="inPart" oninput="refreshNotionPreview()" class="w-full p-1 border border-stone-300 rounded text-xs" placeholder="공란 시 본문 트리에서 편/장/절/관 자동 분류">
             </div>
             <div>
               <label class="font-bold text-stone-600 block mb-0.5">장 (Chapter)</label>
-              <input type="text" id="inChapter" class="w-full p-1 border border-stone-300 rounded text-xs" placeholder="공란 가능">
+              <input type="text" id="inChapter" oninput="refreshNotionPreview()" class="w-full p-1 border border-stone-300 rounded text-xs" placeholder="공란 시 자동 분류">
             </div>
           </div>
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="font-bold text-stone-600 block mb-0.5">절 (Section)</label>
-              <input type="text" id="inSection" class="w-full p-1 border border-stone-300 rounded text-xs" placeholder="공란 가능">
+              <input type="text" id="inSection" oninput="refreshNotionPreview()" class="w-full p-1 border border-stone-300 rounded text-xs" placeholder="공란 시 자동 분류">
             </div>
             <div>
               <label class="font-bold text-stone-600 block mb-0.5">관 (Subsection)</label>
-              <input type="text" id="inSubsection" class="w-full p-1 border border-stone-300 rounded text-xs" placeholder="공란 가능">
+              <input type="text" id="inSubsection" oninput="refreshNotionPreview()" class="w-full p-1 border border-stone-300 rounded text-xs" placeholder="공란 시 자동 분류">
             </div>
+          </div>
+          <div id="hierarchyAutoHint" class="text-[10px] text-emerald-800 bg-emerald-50/90 border border-emerald-200 rounded-lg px-2 py-1 font-medium">
+            자동 분류: 토글 1단계 → 편 → 장 → 절 → 관 (토글 내 불릿 요약만 저장)
           </div>
         </div>
 
         <div class="grid grid-cols-4 gap-2">
           <div class="col-span-1">
             <label class="font-bold text-stone-600 block mb-0.5">시작 순번</label>
-            <input type="number" id="inSlideOrder" value="1" min="1" class="w-full p-1.5 border border-stone-300 rounded text-xs font-semibold" title="첫 번째 생성될 슬라이드의 순번입니다">
+            <input type="number" id="inSlideOrder" value="1" min="1" oninput="refreshNotionPreview()" class="w-full p-1.5 border border-stone-300 rounded text-xs font-semibold" title="각 목차별 첫 슬라이드 순번입니다">
           </div>
           <div class="col-span-3">
             <label class="font-bold text-stone-600 block mb-0.5">슬라이드 제목 (선택)</label>
@@ -546,15 +549,20 @@
 
         <!-- 노션 복사 원문 입력 영역 -->
         <div class="space-y-1.5">
-          <div class="flex items-center justify-between">
-            <label class="font-bold text-stone-700 block text-xs">노션 복사 본문 붙여넣기</label>
-            <span class="text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-semibold border border-emerald-200">
-              글머리기호 시작 ~ 새 본문 시작까지 = 1개 슬라이드
-            </span>
+          <div class="flex items-center justify-between gap-1">
+            <label class="font-bold text-stone-700 block text-xs">노션 토글/본문 붙여넣기</label>
+            <select id="inAutoDepthMode" onchange="refreshNotionPreview()" class="text-[10px] text-emerald-800 bg-emerald-50 px-1.5 py-0.5 rounded font-semibold border border-emerald-200 focus:outline-none">
+              <option value="auto">목차 자동 감지 (권장)</option>
+              <option value="1">트리 1단계까지 목차</option>
+              <option value="2">트리 2단계까지 목차</option>
+              <option value="3">트리 3단계까지 목차</option>
+              <option value="4">트리 4단계까지 목차</option>
+              <option value="none">자동 분류 안 함</option>
+            </select>
           </div>
           <textarea id="inSlideBody" rows="5" oninput="handleNotionBodyInput(this.value)" 
             class="w-full p-2 border border-stone-300 rounded-lg text-xs font-mono leading-relaxed focus:ring-1 focus:ring-emerald-500 focus:outline-none" 
-            placeholder="노션에서 본문 전체를 복사하여 여기에 붙여넣으세요.&#10;&#10;첫 글머리기호(•, -, * 등)부터 새로운 대문단/새 본문 시작 직전까지가 슬라이드 순번 1이 되고, 다음 글머리기호 대문단을 만나면 순번 2, 3...으로 자동 분할됩니다."></textarea>
+            placeholder="노션에서 토글 목록 전체를 복사해 붙여넣으세요.&#10;&#10;• '편' 입력 시: 트리 구조에 따라 장 → 절 → 관 자동 분류&#10;• '편' 공백 시: 트리 구조에 따라 편 → 장 → 절 → 관 자동 분류"></textarea>
         </div>
 
         <!-- 자동 분할된 슬라이드 미리보기 -->
@@ -2180,8 +2188,59 @@ function processCurrentBookTree(targetLocation = null) {
       }
     }
 
-    // 본문 블릿 및 문단 파싱 로직
-    function parseNotionTextIntoSlideBlocks(rawText, startOrder = 1) {
+    // 본문 블릿 및 노션 토글 트리 자동 계층 파싱 로직
+    function updateHierarchyAutoHint() {
+      const hintEl = document.getElementById("hierarchyAutoHint");
+      if (!hintEl) return;
+
+      const ctx = getManualHierarchyContext();
+      const autoDepthMode = document.getElementById("inAutoDepthMode")?.value || "auto";
+      const levelNames = ["편", "장", "절", "관"];
+
+      if (autoDepthMode === "none" || ctx.remainingSlots <= 0) {
+        hintEl.innerHTML = `<i class="fa-solid fa-lock text-stone-500 mr-1"></i>수동 계층 고정: 입력된 목차 아래에 <strong>불릿 요약 본문만</strong> 슬라이드로 저장됩니다.`;
+        return;
+      }
+
+      const autoTargets = levelNames.slice(ctx.fixedLevels.length);
+      const maxSteps = autoDepthMode === "auto" ? autoTargets.length : Math.min(parseInt(autoDepthMode, 10), autoTargets.length);
+      const activeTargets = autoTargets.slice(0, maxSteps);
+      const mappingText = activeTargets.map((name, idx) => `토글 ${idx + 1}단계→<strong>${name}</strong>`).join(", ");
+
+      hintEl.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-emerald-600 mr-1"></i>자동 분류: ${mappingText} · 토글 내 <strong>불릿 요약 본문만</strong> 저장`;
+    }
+
+    function refreshNotionPreview() {
+      updateHierarchyAutoHint();
+      const bodyEl = document.getElementById("inSlideBody");
+      if (bodyEl) handleNotionBodyInput(bodyEl.value);
+    }
+
+    function getManualHierarchyContext() {
+      const cat = document.getElementById("inCategorySelect")?.value || "content";
+      if (cat !== "content") {
+        return { cat, fixedLevels: [], remainingSlots: 0 };
+      }
+
+      const p = (document.getElementById("inPart")?.value || "").trim();
+      const c = (document.getElementById("inChapter")?.value || "").trim();
+      const s = (document.getElementById("inSection")?.value || "").trim();
+      const sub = (document.getElementById("inSubsection")?.value || "").trim();
+
+      const fixedLevels = [];
+      if (p) fixedLevels.push(p);
+      if (p && c) fixedLevels.push(c);
+      if (p && c && s) fixedLevels.push(s);
+      if (p && c && s && sub) fixedLevels.push(sub);
+
+      return {
+        cat,
+        fixedLevels,
+        remainingSlots: 4 - fixedLevels.length
+      };
+    }
+
+    function parseSimpleSlideBlocks(rawText, startOrder = 1) {
       if (!rawText || !rawText.trim()) return [];
 
       const lines = rawText.split(/\r?\n/);
@@ -2251,6 +2310,229 @@ function processCurrentBookTree(targetLocation = null) {
       }));
     }
 
+    function parseNotionTextIntoSlideBlocks(rawText, startOrder = 1) {
+      if (!rawText || !rawText.trim()) return [];
+
+      const ctx = getManualHierarchyContext();
+      const autoDepthMode = document.getElementById("inAutoDepthMode")?.value || "auto";
+
+      // 본문이 아니거나, 자동 분류 안 함이거나, 편/장/절/관이 모두 수동 입력된 경우: 불릿형 요약 블록만 추출
+      if (ctx.cat !== "content" || autoDepthMode === "none" || ctx.remainingSlots <= 0) {
+        const simple = parseSimpleSlideBlocks(rawText, startOrder);
+        return simple.map(item => ({
+          part: ctx.fixedLevels[0] || "",
+          chapter: ctx.fixedLevels[1] || "",
+          section: ctx.fixedLevels[2] || "",
+          subsection: ctx.fixedLevels[3] || "",
+          order: item.order,
+          body: item.body
+        }));
+      }
+
+      const rawLines = rawText.split(/\r?\n/);
+
+      // 들여쓰기 단위(2칸 또는 4칸) 자동 감지
+      let minSpaceIndent = Infinity;
+      rawLines.forEach(line => {
+        if (!line.trim()) return;
+        const m = line.match(/^( +)/);
+        if (m && m[1].length < minSpaceIndent) {
+          minSpaceIndent = m[1].length;
+        }
+      });
+      const spaceUnit = (minSpaceIndent >= 2 && minSpaceIndent <= 8) ? minSpaceIndent : 4;
+
+      const calcDepth = (line) => {
+        const leading = line.match(/^[\t ]*/)[0];
+        let level = 0;
+        let spaces = 0;
+        for (const ch of leading) {
+          if (ch === "\t") {
+            level += 1;
+          } else if (ch === " ") {
+            spaces += 1;
+          }
+        }
+        return level + Math.floor(spaces / spaceUnit);
+      };
+
+      // 줄 단위 노드 생성 및 트리 구축
+      const roots = [];
+      const stack = [];
+      let blankLinePending = false;
+
+      rawLines.forEach(rawLine => {
+        const trimmed = rawLine.trim();
+        if (!trimmed) {
+          blankLinePending = true;
+          return;
+        }
+
+        const depth = calcDepth(rawLine);
+        const headingMatch = trimmed.match(/^(#{1,4})\s+(.*)/);
+        const toggleMatch = trimmed.match(/^[▶▸▼▾]\s*(.*)/);
+        const bulletMatch = trimmed.match(/^[•\-\*⁃]\s+(.*)/);
+
+        const isExplicitHeading = Boolean(headingMatch || toggleMatch);
+        const isBullet = Boolean(bulletMatch);
+        const isPlainText = !isExplicitHeading && !isBullet;
+
+        let cleanText = trimmed;
+        if (headingMatch) cleanText = headingMatch[2].trim();
+        else if (toggleMatch) cleanText = toggleMatch[1].trim();
+        else if (bulletMatch) cleanText = bulletMatch[1].trim();
+
+        const node = {
+          rawLine,
+          trimmed,
+          cleanText,
+          depth,
+          isExplicitHeading,
+          isBullet,
+          isPlainText,
+          hadBlankBefore: blankLinePending,
+          children: []
+        };
+        blankLinePending = false;
+
+        while (stack.length > 0 && stack[stack.length - 1].depth >= depth) {
+          stack.pop();
+        }
+        if (stack.length === 0) {
+          roots.push(node);
+        } else {
+          stack[stack.length - 1].children.push(node);
+        }
+        stack.push(node);
+      });
+
+      // 하위에 일반 본문(비불릿 단락)을 포함하는지 재귀 판별
+      const hasPlainTextDescendant = (node) => {
+        for (const ch of node.children) {
+          if (ch.isPlainText || hasPlainTextDescendant(ch)) return true;
+        }
+        return false;
+      };
+
+      // 서브트리 최대 깊이 계산 (토글 제목 -> 요약 소제목 -> 요약 내용 = 깊이 2 이상)
+      const getMaxSubtreeDepth = (node) => {
+        if (!node.children || node.children.length === 0) return 0;
+        let maxD = 0;
+        for (const ch of node.children) {
+          const d = 1 + getMaxSubtreeDepth(ch);
+          if (d > maxD) maxD = d;
+        }
+        return maxD;
+      };
+
+      const treeHasAnyPlainText = roots.some(r => r.isPlainText || hasPlainTextDescendant(r));
+
+      // 해당 노드가 목차(편/장/절/관)인지 판별
+      const isHeadingNode = (node, usedAutoLevels, siblingHasPlainTextHeading) => {
+        const remaining = ctx.remainingSlots - usedAutoLevels;
+        if (remaining <= 0) return false;
+        if (node.isPlainText) return false;
+
+        if (autoDepthMode !== "auto") {
+          const maxDepth = parseInt(autoDepthMode, 10);
+          return usedAutoLevels < maxDepth && node.children.length > 0;
+        }
+
+        if (node.isExplicitHeading) return true;
+        if (node.children.length === 0) return false;
+
+        // 1) 하위에 일반 본문 단락을 품고 있는 토글은 무조건 목차로 분류
+        if (hasPlainTextDescendant(node)) return true;
+
+        // 2) 같은 레벨의 형제 토글들이 목차이고, 이 노드도 하위에 2단계 이상(요약 소제목->내용)을 가지면 목차로 분류
+        if (siblingHasPlainTextHeading) {
+          return getMaxSubtreeDepth(node) >= 2;
+        }
+
+        // 3) 일반 본문이 전혀 없는 토글 목록(토글 제목 -> 요약 소제목 -> 요약 내용)인 경우
+        if (!treeHasAnyPlainText) {
+          return getMaxSubtreeDepth(node) >= 2;
+        }
+
+        return false;
+      };
+
+      // 불릿형 요약 서브트리를 상대 들여쓰기(0부터 시작)로 직렬화
+      const serializeBulletNode = (node, baseDepth) => {
+        const relDepth = Math.max(0, node.depth - baseDepth);
+        const prefix = "    ".repeat(relDepth);
+        const lines = [`${prefix}${node.trimmed}`];
+        node.children.forEach(child => {
+          lines.push(...serializeBulletNode(child, baseDepth));
+        });
+        return lines;
+      };
+
+      const results = [];
+      const orderCounterMap = new Map();
+
+      const pushBulletSlide = (levels, bulletLines) => {
+        const joined = bulletLines.join("\n").trim();
+        if (!joined) return;
+
+        const part = levels[0] || "본문";
+        const chapter = levels[1] || "";
+        const section = levels[2] || "";
+        const subsection = levels[3] || "";
+
+        const key = `${part}|||${chapter}|||${section}|||${subsection}`;
+        const nextOrder = orderCounterMap.has(key) ? orderCounterMap.get(key) : startOrder;
+
+        results.push({
+          part,
+          chapter,
+          section,
+          subsection,
+          order: nextOrder,
+          body: joined
+        });
+
+        orderCounterMap.set(key, nextOrder + 1);
+      };
+
+      const walkNodes = (nodes, currentLevels, usedAutoLevels) => {
+        let bulletBuffer = [];
+        let bulletBaseDepth = null;
+        const siblingHasPlainTextHeading = nodes.some(n => !n.isPlainText && hasPlainTextDescendant(n));
+
+        const flushBullets = () => {
+          if (bulletBuffer.length > 0) {
+            pushBulletSlide(currentLevels, bulletBuffer);
+            bulletBuffer = [];
+            bulletBaseDepth = null;
+          }
+        };
+
+        nodes.forEach(node => {
+          if (isHeadingNode(node, usedAutoLevels, siblingHasPlainTextHeading)) {
+            flushBullets();
+            const headingTitle = node.cleanText.replace(/^\*\*(.*)\*\*$/, "$1").trim();
+            const nextLevels = [...currentLevels, headingTitle];
+            if (node.children.length > 0) {
+              walkNodes(node.children, nextLevels, usedAutoLevels + 1);
+            }
+          } else if (node.isPlainText) {
+            // 일반 본문은 저장하지 않고, 앞선 불릿형 요약 블록을 1개 슬라이드로 끊어줌
+            flushBullets();
+          } else if (node.isBullet) {
+            // 토글 내 불릿형 요약 본문만 수집
+            if (bulletBaseDepth === null) bulletBaseDepth = node.depth;
+            bulletBuffer.push(...serializeBulletNode(node, bulletBaseDepth));
+          }
+        });
+
+        flushBullets();
+      };
+
+      walkNodes(roots, [...ctx.fixedLevels], 0);
+      return results;
+    }
+
     function handleNotionBodyInput(text) {
       const container = document.getElementById("parsedSlidesContainer");
       const countBadge = document.getElementById("parsedSlideCountBadge");
@@ -2267,7 +2549,7 @@ function processCurrentBookTree(targetLocation = null) {
       if (parsedSlideList.length === 0) {
         container.innerHTML = `
           <div class="p-4 text-center text-stone-400 text-[11px] bg-white rounded-lg border border-stone-200">
-            글머리기호(•, -, * 등)를 포함한 본문을 입력하시면 순번별 슬라이드가 자동 구성됩니다.
+            노션 토글/본문을 입력하시면 편·장·절·관 계층과 슬라이드 순번이 자동 구성됩니다.
           </div>
         `;
         return;
@@ -2280,12 +2562,18 @@ function processCurrentBookTree(targetLocation = null) {
         
         const previewExcerpt = item.body.length > 120 ? item.body.substring(0, 120) + "..." : item.body;
 
+        const pathBadges = [];
+        if (item.part) pathBadges.push(`<span class="px-1 py-0.2 rounded bg-purple-50 text-purple-800 border border-purple-200">편: ${escapeHtml(item.part)}</span>`);
+        if (item.chapter) pathBadges.push(`<span class="px-1 py-0.2 rounded bg-blue-50 text-blue-800 border border-blue-200">장: ${escapeHtml(item.chapter)}</span>`);
+        if (item.section) pathBadges.push(`<span class="px-1 py-0.2 rounded bg-teal-50 text-teal-800 border border-teal-200">절: ${escapeHtml(item.section)}</span>`);
+        if (item.subsection) pathBadges.push(`<span class="px-1 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200">관: ${escapeHtml(item.subsection)}</span>`);
+
         itemBox.innerHTML = `
-          <div class="flex items-center justify-between text-[11px] font-bold text-emerald-800">
-            <span class="flex items-center gap-1">
-              <i class="fa-regular fa-clone text-emerald-600"></i> 슬라이드 순번 ${item.order}
-            </span>
-            <span class="text-[9px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">단일 셀 저장</span>
+          <div class="flex items-center justify-between gap-1 text-[10px] font-bold">
+            <div class="flex flex-wrap items-center gap-1 min-w-0">
+              ${pathBadges.join('<i class="fa-solid fa-chevron-right text-[8px] text-stone-300"></i>')}
+            </div>
+            <span class="flex-shrink-0 text-[9px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">순번 ${item.order}</span>
           </div>
           <div class="text-[11px] font-mono text-stone-600 whitespace-pre-wrap leading-relaxed bg-stone-50 p-1.5 rounded border border-stone-100">${escapeHtml(previewExcerpt)}</div>
         `;
@@ -2307,6 +2595,9 @@ function processCurrentBookTree(targetLocation = null) {
 
       const inCat = document.getElementById("inCategorySelect");
       if (inCat) inCat.value = "content";
+
+      const inAutoDepth = document.getElementById("inAutoDepthMode");
+      if (inAutoDepth) inAutoDepth.value = "auto";
 
       const inSlideTitle = document.getElementById("inSlideTitle");
       if (inSlideTitle) inSlideTitle.value = "";
@@ -2339,26 +2630,15 @@ function processCurrentBookTree(targetLocation = null) {
         return;
       }
 
-      let part = "", chapter = "", section = "", subsection = "";
-
-      if (cat === "content") {
-        part = document.getElementById("inPart").value.trim();
-        chapter = document.getElementById("inChapter").value.trim();
-        section = document.getElementById("inSection").value.trim();
-        subsection = document.getElementById("inSubsection").value.trim();
-
-        if (!part) {
-          alert("본문 등록 시 '편(Part)'은 필수입니다.");
-          return;
-        }
-      } else if (cat === "author") {
-        part = "지은이 소개"; chapter = "지은이"; section = "소개";
+      let fixedPart = "", fixedChapter = "", fixedSection = "", fixedSubsection = "";
+      if (cat === "author") {
+        fixedPart = "지은이 소개"; fixedChapter = "지은이"; fixedSection = "소개";
       } else if (cat === "prologue") {
-        part = "프롤로그"; chapter = "프롤로그"; section = "머리말";
+        fixedPart = "프롤로그"; fixedChapter = "프롤로그"; fixedSection = "머리말";
       } else if (cat === "epilogue") {
-        part = "에필로그"; chapter = "에필로그"; section = "맺음말";
+        fixedPart = "에필로그"; fixedChapter = "에필로그"; fixedSection = "맺음말";
       } else if (cat === "appendix") {
-        part = "부록"; chapter = "부록"; section = "참고자료";
+        fixedPart = "부록"; fixedChapter = "부록"; fixedSection = "참고자료";
       }
 
       const rawBody = document.getElementById("inSlideBody").value.trim();
@@ -2383,7 +2663,12 @@ function processCurrentBookTree(targetLocation = null) {
 
       for (let i = 0; i < totalSlides; i++) {
         const slideItem = parsedSlideList[i];
-        
+
+        const part = cat === "content" ? (slideItem.part || "본문") : fixedPart;
+        const chapter = cat === "content" ? (slideItem.chapter || "") : fixedChapter;
+        const section = cat === "content" ? (slideItem.section || "") : fixedSection;
+        const subsection = cat === "content" ? (slideItem.subsection || "") : fixedSubsection;
+
         let slideTitle = userEnteredTitle;
         if (userEnteredTitle && totalSlides > 1) {
           slideTitle = `${userEnteredTitle} (${i + 1})`;
@@ -2403,7 +2688,7 @@ function processCurrentBookTree(targetLocation = null) {
         };
 
         if (progressStatus) {
-          progressStatus.textContent = `슬라이드 순번 ${slideItem.order} 저장 중... (${i + 1}/${totalSlides})`;
+          progressStatus.textContent = `[${chapter || part}] 순번 ${slideItem.order} 저장 중... (${i + 1}/${totalSlides})`;
         }
         if (btn) {
           btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> (${i + 1}/${totalSlides})`;
@@ -2446,13 +2731,14 @@ function processCurrentBookTree(targetLocation = null) {
       localStorage.removeItem(`CACHE_LIST_${selectedGenre}`);
       localStorage.removeItem(`CACHE_DATA_${selectedGenre}_${bTitle}`);
 
+      const firstSaved = parsedSlideList[0];
       const targetLoc = {
         cat: cat,
-        part: part,
-        chapter: chapter,
-        section: section,
-        subsection: subsection,
-        slideOrder: startOrderVal
+        part: cat === "content" ? (firstSaved.part || "본문") : fixedPart,
+        chapter: cat === "content" ? (firstSaved.chapter || "") : fixedChapter,
+        section: cat === "content" ? (firstSaved.section || "") : fixedSection,
+        subsection: cat === "content" ? (firstSaved.subsection || "") : fixedSubsection,
+        slideOrder: firstSaved.order || startOrderVal
       };
 
       if (!availableBookTitles.includes(bTitle)) {
@@ -3342,6 +3628,7 @@ function processCurrentBookTree(targetLocation = null) {
         if (cat === "content") hierarchyFields.classList.remove("hidden");
         else hierarchyFields.classList.add("hidden");
       }
+      refreshNotionPreview();
     }
 
     function openModal(id) { 
