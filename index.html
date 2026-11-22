@@ -2197,8 +2197,13 @@ function processCurrentBookTree(targetLocation = null) {
       const autoDepthMode = document.getElementById("inAutoDepthMode")?.value || "auto";
       const levelNames = ["편", "장", "절", "관"];
 
-      if (autoDepthMode === "none" || ctx.remainingSlots <= 0) {
-        hintEl.innerHTML = `<i class="fa-solid fa-lock text-stone-500 mr-1"></i>수동 계층 고정: 입력된 목차 아래에 <strong>불릿 요약 본문만</strong> 슬라이드로 저장됩니다.`;
+      if (autoDepthMode === "none") {
+        hintEl.innerHTML = `<i class="fa-solid fa-lock text-stone-500 mr-1"></i>자동 분류 꺼짐: 입력된 목차 아래에 <strong>불릿 요약 본문만</strong> 슬라이드로 저장됩니다.`;
+        return;
+      }
+
+      if (ctx.remainingSlots <= 0) {
+        hintEl.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-emerald-600 mr-1"></i>편·장·절·관 고정: 하위 토글이 있으면 <strong>토글 제목→슬라이드 제목</strong>, 불릿 요약→본문으로 저장됩니다.`;
         return;
       }
 
@@ -2207,7 +2212,7 @@ function processCurrentBookTree(targetLocation = null) {
       const activeTargets = autoTargets.slice(0, maxSteps);
       const mappingText = activeTargets.map((name, idx) => `토글 ${idx + 1}단계→<strong>${name}</strong>`).join(", ");
 
-      hintEl.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-emerald-600 mr-1"></i>자동 분류: ${mappingText} · 토글 내 <strong>불릿 요약 본문만</strong> 저장`;
+      hintEl.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles text-emerald-600 mr-1"></i>자동 분류: ${mappingText} · 그 하위 토글→<strong>슬라이드 제목</strong> (불릿 요약만 저장)`;
     }
 
     function refreshNotionPreview() {
@@ -2316,14 +2321,15 @@ function processCurrentBookTree(targetLocation = null) {
       const ctx = getManualHierarchyContext();
       const autoDepthMode = document.getElementById("inAutoDepthMode")?.value || "auto";
 
-      // 본문이 아니거나, 자동 분류 안 함이거나, 편/장/절/관이 모두 수동 입력된 경우: 불릿형 요약 블록만 추출
-      if (ctx.cat !== "content" || autoDepthMode === "none" || ctx.remainingSlots <= 0) {
+      // 본문이 아니거나 자동 분류 안 함인 경우: 불릿형 요약 블록만 추출
+      if (ctx.cat !== "content" || autoDepthMode === "none") {
         const simple = parseSimpleSlideBlocks(rawText, startOrder);
         return simple.map(item => ({
           part: ctx.fixedLevels[0] || "",
           chapter: ctx.fixedLevels[1] || "",
           section: ctx.fixedLevels[2] || "",
           subsection: ctx.fixedLevels[3] || "",
+          slideTitle: "",
           order: item.order,
           body: item.body
         }));
@@ -2427,24 +2433,16 @@ function processCurrentBookTree(targetLocation = null) {
 
       const treeHasAnyPlainText = roots.some(r => r.isPlainText || hasPlainTextDescendant(r));
 
-      // 해당 노드가 목차(편/장/절/관)인지 판별
-      const isHeadingNode = (node, usedAutoLevels, siblingHasPlainTextHeading) => {
-        const remaining = ctx.remainingSlots - usedAutoLevels;
-        if (remaining <= 0) return false;
+      // 노드가 토글 목차 구조인지 판별 (편/장/절/관 또는 맨 하위 슬라이드 제목 후보)
+      const isStructuralToggle = (node, siblingHasPlainTextHeading) => {
         if (node.isPlainText) return false;
-
-        if (autoDepthMode !== "auto") {
-          const maxDepth = parseInt(autoDepthMode, 10);
-          return usedAutoLevels < maxDepth && node.children.length > 0;
-        }
-
         if (node.isExplicitHeading) return true;
         if (node.children.length === 0) return false;
 
-        // 1) 하위에 일반 본문 단락을 품고 있는 토글은 무조건 목차로 분류
+        // 1) 하위에 일반 본문 단락을 품고 있는 토글
         if (hasPlainTextDescendant(node)) return true;
 
-        // 2) 같은 레벨의 형제 토글들이 목차이고, 이 노드도 하위에 2단계 이상(요약 소제목->내용)을 가지면 목차로 분류
+        // 2) 같은 레벨의 형제 토글들이 목차이고, 이 노드도 하위에 2단계 이상(요약 소제목->내용)을 가지는 경우
         if (siblingHasPlainTextHeading) {
           return getMaxSubtreeDepth(node) >= 2;
         }
@@ -2455,6 +2453,27 @@ function processCurrentBookTree(targetLocation = null) {
         }
 
         return false;
+      };
+
+      // 편/장/절/관 계층으로 들어갈 목차인지 판별
+      const isHierarchyHeadingNode = (node, usedAutoLevels, siblingHasPlainTextHeading) => {
+        const remaining = ctx.remainingSlots - usedAutoLevels;
+        if (remaining <= 0) return false;
+        if (node.isPlainText) return false;
+
+        if (autoDepthMode !== "auto") {
+          const maxDepth = parseInt(autoDepthMode, 10);
+          return usedAutoLevels < maxDepth && node.children.length > 0;
+        }
+
+        return isStructuralToggle(node, siblingHasPlainTextHeading);
+      };
+
+      // 편/장/절/관이 모두 채워진 뒤, 맨 하위 토글 목록이 더 있는 경우 슬라이드 제목으로 사용할지 판별
+      const isSlideTitleToggleNode = (node, usedAutoLevels, siblingHasPlainTextHeading) => {
+        const remaining = ctx.remainingSlots - usedAutoLevels;
+        if (remaining > 0) return false;
+        return isStructuralToggle(node, siblingHasPlainTextHeading);
       };
 
       // 불릿형 요약 서브트리를 상대 들여쓰기(0부터 시작)로 직렬화
@@ -2471,7 +2490,7 @@ function processCurrentBookTree(targetLocation = null) {
       const results = [];
       const orderCounterMap = new Map();
 
-      const pushBulletSlide = (levels, bulletLines) => {
+      const pushBulletSlide = (levels, bulletLines, autoSlideTitle = "") => {
         const joined = bulletLines.join("\n").trim();
         if (!joined) return;
 
@@ -2488,6 +2507,7 @@ function processCurrentBookTree(targetLocation = null) {
           chapter,
           section,
           subsection,
+          slideTitle: autoSlideTitle || "",
           order: nextOrder,
           body: joined
         });
@@ -2495,26 +2515,34 @@ function processCurrentBookTree(targetLocation = null) {
         orderCounterMap.set(key, nextOrder + 1);
       };
 
-      const walkNodes = (nodes, currentLevels, usedAutoLevels) => {
+      const walkNodes = (nodes, currentLevels, usedAutoLevels, currentSlideTitle = "") => {
         let bulletBuffer = [];
         let bulletBaseDepth = null;
         const siblingHasPlainTextHeading = nodes.some(n => !n.isPlainText && hasPlainTextDescendant(n));
 
         const flushBullets = () => {
           if (bulletBuffer.length > 0) {
-            pushBulletSlide(currentLevels, bulletBuffer);
+            pushBulletSlide(currentLevels, bulletBuffer, currentSlideTitle);
             bulletBuffer = [];
             bulletBaseDepth = null;
           }
         };
 
         nodes.forEach(node => {
-          if (isHeadingNode(node, usedAutoLevels, siblingHasPlainTextHeading)) {
+          if (isHierarchyHeadingNode(node, usedAutoLevels, siblingHasPlainTextHeading)) {
             flushBullets();
             const headingTitle = node.cleanText.replace(/^\*\*(.*)\*\*$/, "$1").trim();
             const nextLevels = [...currentLevels, headingTitle];
             if (node.children.length > 0) {
-              walkNodes(node.children, nextLevels, usedAutoLevels + 1);
+              walkNodes(node.children, nextLevels, usedAutoLevels + 1, "");
+            }
+          } else if (isSlideTitleToggleNode(node, usedAutoLevels, siblingHasPlainTextHeading)) {
+            // 편·장·절·관 아래에 하위 토글이 더 있으면 해당 토글 제목을 슬라이드 제목으로 지정
+            flushBullets();
+            const toggleTitle = node.cleanText.replace(/^\*\*(.*)\*\*$/, "$1").trim();
+            const nextSlideTitle = currentSlideTitle ? `${currentSlideTitle} - ${toggleTitle}` : toggleTitle;
+            if (node.children.length > 0) {
+              walkNodes(node.children, currentLevels, usedAutoLevels, nextSlideTitle);
             }
           } else if (node.isPlainText) {
             // 일반 본문은 저장하지 않고, 앞선 불릿형 요약 블록을 1개 슬라이드로 끊어줌
@@ -2529,7 +2557,7 @@ function processCurrentBookTree(targetLocation = null) {
         flushBullets();
       };
 
-      walkNodes(roots, [...ctx.fixedLevels], 0);
+      walkNodes(roots, [...ctx.fixedLevels], 0, "");
       return results;
     }
 
@@ -2568,6 +2596,10 @@ function processCurrentBookTree(targetLocation = null) {
         if (item.section) pathBadges.push(`<span class="px-1 py-0.2 rounded bg-teal-50 text-teal-800 border border-teal-200">절: ${escapeHtml(item.section)}</span>`);
         if (item.subsection) pathBadges.push(`<span class="px-1 py-0.2 rounded bg-amber-50 text-amber-800 border border-amber-200">관: ${escapeHtml(item.subsection)}</span>`);
 
+        const slideTitleHtml = item.slideTitle
+          ? `<div class="text-[10px] font-bold text-indigo-800 bg-indigo-50/80 border border-indigo-200 rounded px-1.5 py-0.5 truncate"><i class="fa-solid fa-heading mr-1 text-indigo-500"></i>슬라이드 제목: ${escapeHtml(item.slideTitle)}</div>`
+          : "";
+
         itemBox.innerHTML = `
           <div class="flex items-center justify-between gap-1 text-[10px] font-bold">
             <div class="flex flex-wrap items-center gap-1 min-w-0">
@@ -2575,6 +2607,7 @@ function processCurrentBookTree(targetLocation = null) {
             </div>
             <span class="flex-shrink-0 text-[9px] px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">순번 ${item.order}</span>
           </div>
+          ${slideTitleHtml}
           <div class="text-[11px] font-mono text-stone-600 whitespace-pre-wrap leading-relaxed bg-stone-50 p-1.5 rounded border border-stone-100">${escapeHtml(previewExcerpt)}</div>
         `;
         container.appendChild(itemBox);
@@ -2669,9 +2702,11 @@ function processCurrentBookTree(targetLocation = null) {
         const section = cat === "content" ? (slideItem.section || "") : fixedSection;
         const subsection = cat === "content" ? (slideItem.subsection || "") : fixedSubsection;
 
-        let slideTitle = userEnteredTitle;
-        if (userEnteredTitle && totalSlides > 1) {
-          slideTitle = `${userEnteredTitle} (${i + 1})`;
+        let slideTitle = "";
+        if (slideItem.slideTitle) {
+          slideTitle = userEnteredTitle ? `${userEnteredTitle} - ${slideItem.slideTitle}` : slideItem.slideTitle;
+        } else if (userEnteredTitle) {
+          slideTitle = totalSlides > 1 ? `${userEnteredTitle} (${i + 1})` : userEnteredTitle;
         }
 
         const payload = {
@@ -2688,7 +2723,7 @@ function processCurrentBookTree(targetLocation = null) {
         };
 
         if (progressStatus) {
-          progressStatus.textContent = `[${chapter || part}] 순번 ${slideItem.order} 저장 중... (${i + 1}/${totalSlides})`;
+          progressStatus.textContent = `[${subsection || section || chapter || part}] 순번 ${slideItem.order} 저장 중... (${i + 1}/${totalSlides})`;
         }
         if (btn) {
           btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> (${i + 1}/${totalSlides})`;
