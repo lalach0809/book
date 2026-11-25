@@ -44,7 +44,7 @@
     /* 음성 읽기(TTS) 현재 낭독 라인 강조 스타일 */
     .tts-line-block {
       border-radius: 6px;
-      transition: background-color 0.25s ease, box-shadow 0.25s ease;
+      transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
     }
     .tts-active-line {
       background-color: rgba(253, 224, 71, 0.42) !important;
@@ -52,9 +52,49 @@
       border-radius: 4px;
     }
 
+    /* 프롬프터 모드 전용 스타일 */
+    .prompter-mode-active #slideContent {
+      cursor: pointer;
+    }
+    /* 프롬프터 현재 줄: 파란색 배경 + 읽지 않은 글자는 연한 하늘색, 읽은 글자는 흰색 표시 */
+    .prompter-active-line {
+      background-color: #2563eb !important;
+      color: #bfdbfe !important;
+      box-shadow: -6px 0 0 0 #1d4ed8, 6px 0 0 0 #2563eb;
+      border-radius: 6px;
+      padding-top: 2px;
+      padding-bottom: 2px;
+    }
+    .prompter-active-line *,
+    .prompter-active-line p,
+    .prompter-active-line span,
+    .prompter-active-line strong,
+    .prompter-active-line em,
+    .prompter-active-line div,
+    .prompter-active-line i {
+      color: #bfdbfe !important;
+    }
+    .prompter-active-line .notion-inline-code {
+      background-color: rgba(255, 255, 255, 0.16) !important;
+      color: #bfdbfe !important;
+    }
+    .prompter-active-line .notion-highlight {
+      background-color: rgba(255, 255, 255, 0.22) !important;
+      color: #bfdbfe !important;
+    }
+
+    /* 현재 줄 안에서 이미 읽은 글자(흰색 강조) */
+    .prompter-char-read,
+    .prompter-active-line .prompter-char-read,
+    .prompter-active-line * .prompter-char-read {
+      color: #ffffff !important;
+      font-weight: 700;
+      text-shadow: 0 0 1px rgba(255, 255, 255, 0.35);
+    }
+
     /* 슬라이드 본문 타이포그래피 최적화 */
     #slideContent {
-      color: #292524; /* 순흑색 대신 눈이 편안한 딥 차콜 */
+      color: #292524;
       letter-spacing: -0.015em;
       word-break: keep-all;
     }
@@ -323,7 +363,7 @@
       </div>
     </aside>
 
-    <!-- 우측 슬라이드 뷰어 영역 (따뜻한 독서 데스크 배경) -->
+    <!-- 우측 슬라이드 뷰어 영역 -->
     <main class="flex-1 flex flex-col bg-[#efece6] overflow-hidden relative min-w-0">
       
       <div class="bg-[#faf8f5] border-b border-[#e2dcd0] px-3 md:px-6 py-1.5 flex items-center justify-between flex-shrink-0">
@@ -365,6 +405,13 @@
               </button>
             </div>
 
+            <!-- 프롬프터 토글 버튼 -->
+            <button onclick="togglePrompter()" id="btnPrompterToggle" class="px-2 py-1 text-[11px] font-bold rounded-lg border transition flex items-center gap-1 bg-[#faf8f5] text-stone-600 border-[#dcd5c7] hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 shadow-2xs" title="자동 글자 단위 프롬프터 모드">
+              <i class="fa-solid fa-align-left text-blue-600 text-xs"></i>
+              <span id="prompterStatusText" class="hidden sm:inline text-[10px]">프롬프터</span>
+            </button>
+
+            <!-- 음성 읽기(TTS) 버튼 그룹 -->
             <div class="flex items-center bg-[#faf8f5] border border-[#dcd5c7] rounded-lg p-0.5 shadow-2xs">
               <button onclick="toggleTTS()" id="btnTTSPlay" class="px-2 py-0.5 text-[11px] font-semibold text-stone-600 hover:text-emerald-700 rounded flex items-center gap-1 transition" title="음성 낭독">
                 <i id="ttsPlayIcon" class="fa-solid fa-volume-high text-emerald-600 text-xs"></i>
@@ -387,13 +434,40 @@
           </div>
         </div>
 
-        <!-- 슬라이드 본문 카드 (웜 페이퍼 북 페이지 디자인 적용) -->
+        <!-- 슬라이드 본문 카드 -->
         <div class="flex-1 flex items-center gap-2 sm:gap-3.5 md:gap-4 min-h-0 relative">
           <button id="prevBtn" onclick="navigateSlide(-1)" class="hidden lg:flex w-10 h-16 bg-[#faf8f5] hover:bg-stone-800 text-stone-500 hover:text-white rounded-xl shadow-xs border border-[#dcd5c7] items-center justify-center transition disabled:opacity-30 disabled:pointer-events-none group flex-shrink-0" disabled>
             <i class="fa-solid fa-chevron-left text-lg group-hover:-translate-x-0.5 transition-transform"></i>
           </button>
 
-          <div class="book-slide-card flex-1 h-full rounded-xl md:rounded-2xl p-4 sm:p-6 md:p-8 flex flex-col justify-between overflow-hidden relative">
+          <div id="bookSlideCard" class="book-slide-card flex-1 h-full rounded-xl md:rounded-2xl p-4 sm:p-6 md:p-8 flex flex-col justify-between overflow-hidden relative">
+            <!-- 프롬프터 안내 및 컨트롤 배너 (활성화 시에만 표시) -->
+            <div id="prompterGuideBanner" class="hidden flex-shrink-0 mb-2.5 px-2.5 py-1.5 rounded-lg bg-blue-600 text-white text-[11px] font-semibold flex flex-wrap items-center justify-between gap-2 shadow-xs">
+              <div class="flex items-center gap-1.5 min-w-0">
+                <i class="fa-solid fa-display"></i>
+                <span class="truncate">자동 프롬프터 · <strong>Enter</strong>/<strong>클릭</strong>: 다음 줄 · <strong>Space</strong>: 일시정지</span>
+              </div>
+
+              <div class="flex items-center gap-1.5 flex-shrink-0">
+                <!-- 일시정지/재개 버튼 -->
+                <button onclick="togglePrompterPause()" id="btnPrompterPause" class="px-2 py-0.5 rounded bg-blue-800/80 hover:bg-blue-900 text-white text-[10px] font-bold transition flex items-center gap-1" title="일시정지 / 재개 (Space)">
+                  <i id="prompterPauseIcon" class="fa-solid fa-pause text-[9px]"></i>
+                  <span id="prompterPauseText">일시정지</span>
+                </button>
+
+                <!-- 속도 선택 드롭다운 -->
+                <select id="prompterSpeedSelect" onchange="changePrompterSpeed(this.value)" class="bg-blue-800/80 hover:bg-blue-900 text-white text-[10px] font-bold rounded px-1.5 py-0.5 border border-blue-400/40 focus:outline-none cursor-pointer" title="글자 진행 속도">
+                  <option value="140">느림 (0.6x)</option>
+                  <option value="90" selected>보통 (1.0x)</option>
+                  <option value="60">빠름 (1.5x)</option>
+                  <option value="38">매우빠름 (2.2x)</option>
+                </select>
+
+                <!-- 현재 줄 표시 -->
+                <span id="prompterLineCounter" class="text-[10px] bg-blue-950/70 px-2 py-0.5 rounded font-mono">0 / 0</span>
+              </div>
+            </div>
+
             <div id="slideHeaderContainer" class="flex-shrink-0 border-b border-[#e5dec9] pb-2 mb-2.5 hidden">
               <div class="flex items-center gap-1.5 mb-1">
                 <span id="slideTagBadge" class="text-[9px] uppercase font-bold tracking-wider px-1.5 py-0.2 rounded border">
@@ -692,6 +766,15 @@
     let isTTSPlaying = false;
     let isTTSPaused = false;
 
+    // 자동 글자 단위 프롬프터 상태 관리 변수
+    let isPrompterActive = false;
+    let isPrompterPaused = false;
+    let prompterLineIndex = 0;
+    let prompterCharIndex = 0;
+    let prompterLineCharSpans = [];
+    let prompterTimer = null;
+    let prompterStepMs = 90; // 기본 글자 진행 속도 (ms)
+
     let parsedSlideList = [];
 
     function getActiveApiUrl() {
@@ -735,6 +818,7 @@
     }
 
     function resetViewerToInitialState() {
+      stopPrompter();
       const bookDropdown = document.getElementById("bookSelectDropdown");
       const sContent = document.getElementById("slideContent");
       const treeCont = document.getElementById("treeContainer");
@@ -787,6 +871,7 @@
       localStorage.setItem("BOOK_SELECTED_GENRE", newGenre);
 
       stopTTS();
+      stopPrompter();
       cancelInlineEdit();
       selectedLeafNode = null;
       currentSlideIdx = 0;
@@ -1057,7 +1142,7 @@
       updateOverallProgress();
     }
 
-function processCurrentBookTree(targetLocation = null) {
+    function processCurrentBookTree(targetLocation = null) {
       const authorDisplay = document.getElementById("bookAuthorDisplay");
       if (authorDisplay) {
         authorDisplay.innerHTML = `<i class="fa-solid fa-user-pen mr-1 text-stone-400"></i>${escapeHtml(currentBookData.author)}`;
@@ -1290,6 +1375,7 @@ function processCurrentBookTree(targetLocation = null) {
         }
       }
     }
+
     function findFirstSelectable(nodes) {
       if (!nodes || nodes.length === 0) return null;
       for (const n of nodes) {
@@ -1427,6 +1513,8 @@ function processCurrentBookTree(targetLocation = null) {
       cancelInlineEdit();
       selectedLeafNode = node;
       currentSlideIdx = slideIdx;
+      prompterLineIndex = 0;
+      prompterCharIndex = 0;
       renderTree(currentBookData.tree);
       renderSlideViewer();
     }
@@ -1690,6 +1778,7 @@ function processCurrentBookTree(targetLocation = null) {
         if (dots) dots.innerHTML = "";
         updateBookmarkButtonUI();
         stopTTS();
+        stopPrompter();
         cancelInlineEdit();
         return;
       }
@@ -1793,6 +1882,8 @@ function processCurrentBookTree(targetLocation = null) {
               recordPreviousSlideBookmark(selectedLeafNode, currentSlideIdx);
             }
             currentSlideIdx = idx;
+            prompterLineIndex = 0;
+            prompterCharIndex = 0;
             renderSlideViewer();
           };
           dots.appendChild(b);
@@ -1802,12 +1893,23 @@ function processCurrentBookTree(targetLocation = null) {
       updateBookmarkButtonUI();
       updateAdminUI();
       updateOverallProgress();
+
+      // 프롬프터 모드가 켜져 있다면 새 슬라이드 첫 줄 첫 글자부터 이어서 자동 진행
+      if (isPrompterActive) {
+        prompterLineIndex = 0;
+        prompterCharIndex = 0;
+        preparePrompterLine(0);
+        if (!isPrompterPaused) {
+          startPrompterTimer();
+        }
+      }
     }
 
     function navigateSlide(dir) {
       if (!selectedLeafNode || !selectedLeafNode.slides) return;
       stopTTS();
       cancelInlineEdit();
+      clearPrompterTimer();
 
       const prevNode = selectedLeafNode;
       const prevIdx = currentSlideIdx;
@@ -1818,6 +1920,8 @@ function processCurrentBookTree(targetLocation = null) {
       if (targetIdx >= 0 && targetIdx < slides.length) {
         recordPreviousSlideBookmark(prevNode, prevIdx);
         currentSlideIdx = targetIdx;
+        prompterLineIndex = 0;
+        prompterCharIndex = 0;
         renderSlideViewer();
         return;
       }
@@ -1830,6 +1934,8 @@ function processCurrentBookTree(targetLocation = null) {
           recordPreviousSlideBookmark(prevNode, prevIdx);
           selectedLeafNode = allNodes[nodeIdx + 1];
           currentSlideIdx = 0;
+          prompterLineIndex = 0;
+          prompterCharIndex = 0;
           renderTree(currentBookData.tree);
           renderSlideViewer();
         }
@@ -1841,10 +1947,317 @@ function processCurrentBookTree(targetLocation = null) {
           recordPreviousSlideBookmark(prevNode, prevIdx);
           selectedLeafNode = allNodes[nodeIdx - 1];
           currentSlideIdx = Math.max(0, (selectedLeafNode.slides ? selectedLeafNode.slides.length - 1 : 0));
+          prompterLineIndex = 0;
+          prompterCharIndex = 0;
           renderTree(currentBookData.tree);
           renderSlideViewer();
         }
       }
+    }
+
+    // ==========================================
+    // 자동 글자 단위 프롬프터(Teleprompter) 기능
+    // ==========================================
+    function getPrompterLineElements() {
+      const elements = [];
+      const sHeader = document.getElementById("slideHeaderContainer");
+      const slideTitle = document.getElementById("slideTitle");
+      if (sHeader && !sHeader.classList.contains("hidden") && slideTitle && slideTitle.textContent.trim()) {
+        elements.push(slideTitle);
+      }
+      const contentLines = document.querySelectorAll("#slideContent [data-tts-line]");
+      contentLines.forEach(el => elements.push(el));
+      return elements;
+    }
+
+    // 한 줄 내부의 텍스트 노드를 글자 단위 span으로 분할
+    function wrapLineCharacters(lineEl) {
+      if (!lineEl) return [];
+      const existing = lineEl.querySelectorAll(".prompter-char");
+      if (existing.length > 0) {
+        return Array.from(existing);
+      }
+
+      const spans = [];
+      const walker = document.createTreeWalker(lineEl, NodeFilter.SHOW_TEXT, null);
+      const textNodes = [];
+      let currentNode = walker.nextNode();
+      while (currentNode) {
+        if (currentNode.nodeValue && currentNode.nodeValue.length > 0) {
+          textNodes.push(currentNode);
+        }
+        currentNode = walker.nextNode();
+      }
+
+      textNodes.forEach(tNode => {
+        const parentEl = tNode.parentElement;
+        if (parentEl && parentEl.closest(".flex-shrink-0")) {
+          return;
+        }
+
+        const frag = document.createDocumentFragment();
+        const chars = Array.from(tNode.nodeValue);
+        chars.forEach(ch => {
+          const span = document.createElement("span");
+          span.className = "prompter-char";
+          span.textContent = ch;
+          frag.appendChild(span);
+          spans.push(span);
+        });
+        tNode.parentNode.replaceChild(frag, tNode);
+      });
+
+      return spans;
+    }
+
+    // 글자 단위 span을 원래 텍스트 노드로 깔끔하게 복원
+    function unwrapLineCharacters(lineEl) {
+      if (!lineEl) return;
+      const charSpans = lineEl.querySelectorAll(".prompter-char");
+      if (charSpans.length === 0) return;
+
+      charSpans.forEach(span => {
+        const textNode = document.createTextNode(span.textContent);
+        span.parentNode.replaceChild(textNode, span);
+      });
+      lineEl.normalize();
+    }
+
+    function clearPrompterHighlight() {
+      document.querySelectorAll(".prompter-active-line").forEach(el => {
+        el.classList.remove("prompter-active-line");
+        unwrapLineCharacters(el);
+      });
+      prompterLineCharSpans = [];
+    }
+
+    function clearPrompterTimer() {
+      if (prompterTimer) {
+        clearTimeout(prompterTimer);
+        prompterTimer = null;
+      }
+    }
+
+    // 지정한 줄(lineIdx)을 파란색 배경으로 활성화하고 지나간 줄은 원래의 색으로 복원
+    function preparePrompterLine(lineIdx) {
+      clearPrompterTimer();
+      const counterEl = document.getElementById("prompterLineCounter");
+      if (!isPrompterActive) return;
+
+      const lines = getPrompterLineElements();
+      if (lines.length === 0) {
+        if (counterEl) counterEl.textContent = "0 / 0";
+        return;
+      }
+
+      if (lineIdx < 0) lineIdx = 0;
+      if (lineIdx >= lines.length) lineIdx = lines.length - 1;
+      prompterLineIndex = lineIdx;
+      prompterCharIndex = 0;
+
+      lines.forEach((el, idx) => {
+        if (idx === prompterLineIndex) {
+          el.classList.add("prompter-active-line");
+          prompterLineCharSpans = wrapLineCharacters(el);
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+        } else {
+          // 이미 지나간 줄과 아직 도달하지 않은 줄 모두 강조 없이 원래의 색으로 표현
+          el.classList.remove("prompter-active-line");
+          unwrapLineCharacters(el);
+        }
+      });
+
+      if (counterEl) {
+        counterEl.textContent = `${prompterLineIndex + 1} / ${lines.length}`;
+      }
+    }
+
+    // 글자 단위로 한 글자씩 흰색으로 변경하며 자동 진행
+    function startPrompterTimer() {
+      clearPrompterTimer();
+      if (!isPrompterActive || isPrompterPaused || isInlineEditing) return;
+
+      const step = () => {
+        if (!isPrompterActive || isPrompterPaused || isInlineEditing) return;
+
+        if (prompterCharIndex < prompterLineCharSpans.length) {
+          const span = prompterLineCharSpans[prompterCharIndex];
+          const ch = span ? span.textContent : "";
+          if (span) {
+            span.classList.add("prompter-char-read");
+          }
+          prompterCharIndex++;
+
+          let delay = prompterStepMs;
+          if (/\s/.test(ch)) {
+            delay = Math.max(20, Math.round(prompterStepMs * 0.45));
+          } else if (/[.,!?;:]/.test(ch)) {
+            delay = Math.round(prompterStepMs * 2.2);
+          }
+
+          prompterTimer = setTimeout(step, delay);
+        } else {
+          prompterTimer = setTimeout(() => {
+            if (!isPrompterActive || isPrompterPaused || isInlineEditing) return;
+            advancePrompterLine();
+          }, Math.max(180, Math.round(prompterStepMs * 2.6)));
+        }
+      };
+
+      prompterTimer = setTimeout(step, 120);
+    }
+
+    function togglePrompter() {
+      if (isPrompterActive) {
+        stopPrompter();
+      } else {
+        startPrompter();
+      }
+    }
+
+    function startPrompter() {
+      if (!selectedLeafNode || !selectedLeafNode.slides || selectedLeafNode.slides.length === 0) {
+        alert("프롬프터를 실행할 슬라이드 내용이 없습니다.");
+        return;
+      }
+      if (isInlineEditing) {
+        alert("수정 모드에서는 프롬프터를 실행할 수 없습니다.");
+        return;
+      }
+      stopTTS();
+      isPrompterActive = true;
+      isPrompterPaused = false;
+      prompterLineIndex = 0;
+      prompterCharIndex = 0;
+
+      const speedSelect = document.getElementById("prompterSpeedSelect");
+      if (speedSelect) {
+        prompterStepMs = parseInt(speedSelect.value, 10) || 90;
+      }
+
+      updatePrompterUI();
+      preparePrompterLine(0);
+      startPrompterTimer();
+    }
+
+    function stopPrompter() {
+      clearPrompterTimer();
+      isPrompterActive = false;
+      isPrompterPaused = false;
+      prompterLineIndex = 0;
+      prompterCharIndex = 0;
+      clearPrompterHighlight();
+      updatePrompterUI();
+    }
+
+    function togglePrompterPause() {
+      if (!isPrompterActive) return;
+      isPrompterPaused = !isPrompterPaused;
+      updatePrompterPauseUI();
+      if (isPrompterPaused) {
+        clearPrompterTimer();
+      } else {
+        startPrompterTimer();
+      }
+    }
+
+    function changePrompterSpeed(msVal) {
+      const parsed = parseInt(msVal, 10);
+      if (!isNaN(parsed) && parsed > 0) {
+        prompterStepMs = parsed;
+      }
+      if (isPrompterActive && !isPrompterPaused) {
+        startPrompterTimer();
+      }
+    }
+
+    // Enter 키 또는 화면 클릭 또는 줄 완료 시 다음 줄로 즉시 이동
+    function advancePrompterLine() {
+      if (!isPrompterActive || isInlineEditing) return;
+      clearPrompterTimer();
+
+      const lines = getPrompterLineElements();
+      if (lines.length === 0) {
+        navigateSlide(1);
+        return;
+      }
+
+      if (prompterLineIndex < lines.length - 1) {
+        preparePrompterLine(prompterLineIndex + 1);
+        if (!isPrompterPaused) {
+          startPrompterTimer();
+        }
+      } else {
+        const allNodes = getFlattenedSlideNodes();
+        const nodeIdx = allNodes.findIndex(n => n.id === selectedLeafNode.id);
+        const hasNextSlideInNode = currentSlideIdx < (selectedLeafNode.slides.length - 1);
+        const hasNextNode = nodeIdx !== -1 && nodeIdx < allNodes.length - 1;
+
+        if (hasNextSlideInNode || hasNextNode) {
+          navigateSlide(1);
+        } else {
+          stopPrompter();
+        }
+      }
+    }
+
+    function updatePrompterPauseUI() {
+      const icon = document.getElementById("prompterPauseIcon");
+      const text = document.getElementById("prompterPauseText");
+      if (!icon || !text) return;
+
+      if (isPrompterPaused) {
+        icon.className = "fa-solid fa-play text-[9px] text-amber-300";
+        text.textContent = "재개";
+      } else {
+        icon.className = "fa-solid fa-pause text-[9px]";
+        text.textContent = "일시정지";
+      }
+    }
+
+    function updatePrompterUI() {
+      const btn = document.getElementById("btnPrompterToggle");
+      const text = document.getElementById("prompterStatusText");
+      const banner = document.getElementById("prompterGuideBanner");
+      const card = document.getElementById("bookSlideCard");
+
+      if (isPrompterActive) {
+        if (btn) {
+          btn.className = "px-2 py-1 text-[11px] font-bold rounded-lg border transition flex items-center gap-1 bg-blue-600 text-white border-blue-700 shadow-xs";
+          const icon = btn.querySelector("i");
+          if (icon) icon.className = "fa-solid fa-align-left text-white text-xs";
+        }
+        if (text) text.textContent = "프롬프터 ON";
+        if (banner) banner.classList.remove("hidden");
+        if (card) card.classList.add("prompter-mode-active");
+        updatePrompterPauseUI();
+      } else {
+        if (btn) {
+          btn.className = "px-2 py-1 text-[11px] font-bold rounded-lg border transition flex items-center gap-1 bg-[#faf8f5] text-stone-600 border-[#dcd5c7] hover:bg-blue-50 hover:text-blue-700 hover:border-blue-300 shadow-2xs";
+          const icon = btn.querySelector("i");
+          if (icon) icon.className = "fa-solid fa-align-left text-blue-600 text-xs";
+        }
+        if (text) text.textContent = "프롬프터";
+        if (banner) banner.classList.add("hidden");
+        if (card) card.classList.remove("prompter-mode-active");
+      }
+    }
+
+    function setupPrompterClickHandler() {
+      const slideContentEl = document.getElementById("slideContent");
+      const slideHeaderEl = document.getElementById("slideHeaderContainer");
+
+      const handleAreaClick = (e) => {
+        if (!isPrompterActive || isInlineEditing) return;
+        if (e.target.closest("button, a, input, textarea, select")) return;
+        const sel = window.getSelection();
+        if (sel && sel.toString().trim().length > 0) return;
+
+        advancePrompterLine();
+      };
+
+      if (slideContentEl) slideContentEl.addEventListener("click", handleAreaClick);
+      if (slideHeaderEl) slideHeaderEl.addEventListener("click", handleAreaClick);
     }
 
     // 도서 검색 기능
@@ -2017,6 +2430,7 @@ function processCurrentBookTree(targetLocation = null) {
         return;
       }
       stopTTS();
+      stopPrompter();
       isInlineEditing = true;
 
       const cur = selectedLeafNode.slides[currentSlideIdx];
@@ -2145,6 +2559,7 @@ function processCurrentBookTree(targetLocation = null) {
       }
 
       stopTTS();
+      stopPrompter();
       cancelInlineEdit();
       const btn = document.getElementById("btnDeleteSlide");
       if (btn) {
@@ -2321,7 +2736,6 @@ function processCurrentBookTree(targetLocation = null) {
       const ctx = getManualHierarchyContext();
       const autoDepthMode = document.getElementById("inAutoDepthMode")?.value || "auto";
 
-      // 본문이 아니거나 자동 분류 안 함인 경우: 불릿형 요약 블록만 추출
       if (ctx.cat !== "content" || autoDepthMode === "none") {
         const simple = parseSimpleSlideBlocks(rawText, startOrder);
         return simple.map(item => ({
@@ -2337,7 +2751,6 @@ function processCurrentBookTree(targetLocation = null) {
 
       const rawLines = rawText.split(/\r?\n/);
 
-      // 들여쓰기 단위(2칸 또는 4칸) 자동 감지
       let minSpaceIndent = Infinity;
       rawLines.forEach(line => {
         if (!line.trim()) return;
@@ -2362,7 +2775,6 @@ function processCurrentBookTree(targetLocation = null) {
         return level + Math.floor(spaces / spaceUnit);
       };
 
-      // 줄 단위 노드 생성 및 트리 구축
       const roots = [];
       const stack = [];
       let blankLinePending = false;
@@ -2412,7 +2824,6 @@ function processCurrentBookTree(targetLocation = null) {
         stack.push(node);
       });
 
-      // 하위에 일반 본문(비불릿 단락)을 포함하는지 재귀 판별
       const hasPlainTextDescendant = (node) => {
         for (const ch of node.children) {
           if (ch.isPlainText || hasPlainTextDescendant(ch)) return true;
@@ -2420,7 +2831,6 @@ function processCurrentBookTree(targetLocation = null) {
         return false;
       };
 
-      // 서브트리 최대 깊이 계산 (토글 제목 -> 요약 소제목 -> 요약 내용 = 깊이 2 이상)
       const getMaxSubtreeDepth = (node) => {
         if (!node.children || node.children.length === 0) return 0;
         let maxD = 0;
@@ -2433,21 +2843,17 @@ function processCurrentBookTree(targetLocation = null) {
 
       const treeHasAnyPlainText = roots.some(r => r.isPlainText || hasPlainTextDescendant(r));
 
-      // 노드가 토글 목차 구조인지 판별 (편/장/절/관 또는 맨 하위 슬라이드 제목 후보)
       const isStructuralToggle = (node, siblingHasPlainTextHeading) => {
         if (node.isPlainText) return false;
         if (node.isExplicitHeading) return true;
         if (node.children.length === 0) return false;
 
-        // 1) 하위에 일반 본문 단락을 품고 있는 토글
         if (hasPlainTextDescendant(node)) return true;
 
-        // 2) 같은 레벨의 형제 토글들이 목차이고, 이 노드도 하위에 2단계 이상(요약 소제목->내용)을 가지는 경우
         if (siblingHasPlainTextHeading) {
           return getMaxSubtreeDepth(node) >= 2;
         }
 
-        // 3) 일반 본문이 전혀 없는 토글 목록(토글 제목 -> 요약 소제목 -> 요약 내용)인 경우
         if (!treeHasAnyPlainText) {
           return getMaxSubtreeDepth(node) >= 2;
         }
@@ -2455,7 +2861,6 @@ function processCurrentBookTree(targetLocation = null) {
         return false;
       };
 
-      // 편/장/절/관 계층으로 들어갈 목차인지 판별
       const isHierarchyHeadingNode = (node, usedAutoLevels, siblingHasPlainTextHeading) => {
         const remaining = ctx.remainingSlots - usedAutoLevels;
         if (remaining <= 0) return false;
@@ -2469,14 +2874,12 @@ function processCurrentBookTree(targetLocation = null) {
         return isStructuralToggle(node, siblingHasPlainTextHeading);
       };
 
-      // 편/장/절/관이 모두 채워진 뒤, 맨 하위 토글 목록이 더 있는 경우 슬라이드 제목으로 사용할지 판별
       const isSlideTitleToggleNode = (node, usedAutoLevels, siblingHasPlainTextHeading) => {
         const remaining = ctx.remainingSlots - usedAutoLevels;
         if (remaining > 0) return false;
         return isStructuralToggle(node, siblingHasPlainTextHeading);
       };
 
-      // 불릿형 요약 서브트리를 상대 들여쓰기(0부터 시작)로 직렬화
       const serializeBulletNode = (node, baseDepth) => {
         const relDepth = Math.max(0, node.depth - baseDepth);
         const prefix = "    ".repeat(relDepth);
@@ -2537,7 +2940,6 @@ function processCurrentBookTree(targetLocation = null) {
               walkNodes(node.children, nextLevels, usedAutoLevels + 1, "");
             }
           } else if (isSlideTitleToggleNode(node, usedAutoLevels, siblingHasPlainTextHeading)) {
-            // 편·장·절·관 아래에 하위 토글이 더 있으면 해당 토글 제목을 슬라이드 제목으로 지정
             flushBullets();
             const toggleTitle = node.cleanText.replace(/^\*\*(.*)\*\*$/, "$1").trim();
             const nextSlideTitle = currentSlideTitle ? `${currentSlideTitle} - ${toggleTitle}` : toggleTitle;
@@ -2545,10 +2947,8 @@ function processCurrentBookTree(targetLocation = null) {
               walkNodes(node.children, currentLevels, usedAutoLevels, nextSlideTitle);
             }
           } else if (node.isPlainText) {
-            // 일반 본문은 저장하지 않고, 앞선 불릿형 요약 블록을 1개 슬라이드로 끊어줌
             flushBullets();
           } else if (node.isBullet) {
-            // 토글 내 불릿형 요약 본문만 수집
             if (bulletBaseDepth === null) bulletBaseDepth = node.depth;
             bulletBuffer.push(...serializeBulletNode(node, bulletBaseDepth));
           }
@@ -2783,7 +3183,7 @@ function processCurrentBookTree(targetLocation = null) {
       }
     }
 
-    // 자동 책갈피 기능 (열람한 마지막 슬라이드 이전 슬라이드 자동 저장)
+    // 자동 책갈피 기능
     function getStoredBookmarkForCurrentBook() {
       if (!currentBookData.title) return null;
       if (CURRENT_USER_ID) {
@@ -2827,12 +3227,10 @@ function processCurrentBookTree(targetLocation = null) {
         slideIdx: safeIdx
       };
 
-      // 로컬 즉시 저장 (비로그인 상태 포함)
       try {
         localStorage.setItem(`LOCAL_AUTO_BOOKMARK_${selectedGenre}_${currentBookData.title}`, JSON.stringify(bmData));
       } catch (e) {}
 
-      // 회원 로그인 시 클라우드 캐시 및 시트 백그라운드 동기화
       if (CURRENT_USER_ID) {
         if (!cloudBookmarks[CURRENT_USER_ID]) cloudBookmarks[CURRENT_USER_ID] = {};
         cloudBookmarks[CURRENT_USER_ID][currentBookData.title] = bmData;
@@ -3086,9 +3484,12 @@ function processCurrentBookTree(targetLocation = null) {
       });
       let t = lines.filter(Boolean).join(" ");
 
-      // A.D., B.C., U.S.A. 등 알파벳 약어 중간/끝의 마침표 제거 (점 발음 생략 -> AD, BC, USA)
-      t = t.replace(/([A-Za-z])\.(?=[A-Za-z])/g, "$1");
+      // 1) G.H. Kane, C.S. Lewis, J.K. Rowling 등 이니셜 조합의 마침표를 공백으로 변환 ("점" 발음 방지)
+      t = t.replace(/\b([A-Za-z])\.(?=\s*[A-Za-z])/g, "$1 ");
+      // 2) A.D., B.C., U.S.A. 등 알파벳 약어 끝의 마침표 제거
       t = t.replace(/\b([A-Za-z]{2,})\.(?=\s|$|[^A-Za-z0-9])/g, "$1");
+      // 3) 단독 단일 영문 이니셜 뒤 마침표 제거 (예: "Kane, G.H.")
+      t = t.replace(/(^|[^A-Za-z0-9])([A-Za-z])\.(?=\s|$|[^A-Za-z0-9])/g, "$1$2");
 
       t = t.replace(/```[\s\S]*?```/g, " ");
       t = t.replace(/[()（）]/g, " ");
@@ -3173,7 +3574,6 @@ function processCurrentBookTree(targetLocation = null) {
     let ttsSegments = [];
     let currentSegmentIndex = 0;
 
-    // 현재 읽고 있는 라인 강조 해제 및 적용 헬퍼
     function clearTTSHighlight() {
       document.querySelectorAll('.tts-active-line').forEach(el => {
         el.classList.remove('tts-active-line');
@@ -3197,7 +3597,6 @@ function processCurrentBookTree(targetLocation = null) {
       }
     }
 
-    // 현재 슬라이드 인덱스(currentSlideIdx)의 텍스트를 라인 단위 세그먼트로 구성해 TTS 읽기 시작
     function startReadingCurrentSlide(includeNodeTitle = true) {
       const synth = window.speechSynthesis;
       if (!selectedLeafNode || !selectedLeafNode.slides || !selectedLeafNode.slides[currentSlideIdx]) {
@@ -3208,7 +3607,6 @@ function processCurrentBookTree(targetLocation = null) {
       const cur = selectedLeafNode.slides[currentSlideIdx];
       const segments = [];
 
-      // 1. 제목 세그먼트 구성
       const hasVisibleCustomTitle = cur.title && cur.title.trim() !== "" && cur.title.trim() !== selectedLeafNode.title.trim();
       const rawTitle = includeNodeTitle ? (cur.title || selectedLeafNode.title || "") : (cur.title || "");
       const titleToRead = cleanTextForSpeech(rawTitle);
@@ -3224,7 +3622,6 @@ function processCurrentBookTree(targetLocation = null) {
         });
       }
 
-      // 2. 본문 라인별 세그먼트 구성 (코드블록 내부 제외, 렌더링된 data-tts-line 인덱스와 1:1 매칭)
       const bodyLines = (cur.body || "").split('\n');
       let inCodeBlock = false;
       bodyLines.forEach((rawLine, lineIdx) => {
@@ -3250,7 +3647,6 @@ function processCurrentBookTree(targetLocation = null) {
         }
       });
 
-      // 현재 슬라이드에 읽을 텍스트가 비어있는 경우 다음 슬라이드로 자동 이동 처리
       if (segments.length === 0) {
         if (currentSlideIdx < selectedLeafNode.slides.length - 1) {
           recordPreviousSlideBookmark(selectedLeafNode, currentSlideIdx);
@@ -3302,18 +3698,16 @@ function processCurrentBookTree(targetLocation = null) {
         return;
       }
 
-      // 처음 재생을 누른 슬라이드부터 해당 목차의 끝까지 순차 낭독 시작
+      stopPrompter();
       startReadingCurrentSlide(true);
     }
 
     function speakNextSegment() {
       const synth = window.speechSynthesis;
 
-      // 현재 슬라이드의 모든 문장(세그먼트)을 다 읽었을 때
       if (currentSegmentIndex >= ttsSegments.length) {
         clearTTSHighlight();
 
-        // 같은 목차 내에 다음 슬라이드가 남아있다면 자동으로 슬라이드 이동 후 연속 낭독
         if (
           isTTSPlaying &&
           selectedLeafNode &&
@@ -3324,7 +3718,6 @@ function processCurrentBookTree(targetLocation = null) {
           currentSlideIdx++;
           renderSlideViewer();
 
-          // 화면 전환 직후 자연스러운 텀(0.4초)을 두고 다음 슬라이드 낭독 시작
           setTimeout(() => {
             if (isTTSPlaying) {
               startReadingCurrentSlide(false);
@@ -3333,7 +3726,6 @@ function processCurrentBookTree(targetLocation = null) {
           return;
         }
 
-        // 현재 목차의 맨 마지막 슬라이드까지 모두 읽었으므로 음성 읽기 종료
         stopTTS();
         return;
       }
@@ -3700,9 +4092,28 @@ function processCurrentBookTree(targetLocation = null) {
         closeModal("addDataModal");
         closeModal("apiSettingModal");
         closeModal("userLoginModal");
+        if (isPrompterActive) {
+          stopPrompter();
+          return;
+        }
       }
       const tag = document.activeElement.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+
+      // 프롬프터 활성화 상태에서 Enter 키 입력 시 다음 줄로 이동
+      if (isPrompterActive && e.key === "Enter") {
+        e.preventDefault();
+        advancePrompterLine();
+        return;
+      }
+
+      // 프롬프터 활성화 상태에서 Space 키 입력 시 일시정지/재개
+      if (isPrompterActive && e.code === "Space") {
+        e.preventDefault();
+        togglePrompterPause();
+        return;
+      }
+
       if (e.key === "ArrowLeft") navigateSlide(-1);
       if (e.key === "ArrowRight") navigateSlide(1);
     });
@@ -3711,6 +4122,7 @@ function processCurrentBookTree(targetLocation = null) {
       initGenreDropdown();
       updateUserLoginUI();
       setupSwipeGesture();
+      setupPrompterClickHandler();
       updateAdminUI();
     });
   </script>
