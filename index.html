@@ -65,6 +65,15 @@
       padding-top: 2px;
       padding-bottom: 2px;
     }
+/* 프롬프터 활성화 시 글자 span 분할로 인한 가로 밀림/정렬 틀어짐 방지 */
+    .prompter-active-line > p {
+      text-align: left !important;
+      width: 100%;
+    }
+    .prompter-char {
+      display: inline !important;
+      white-space: pre-wrap;
+    }
     .prompter-active-line *,
     .prompter-active-line p,
     .prompter-active-line span,
@@ -1971,6 +1980,7 @@
     }
 
     // 한 줄 내부의 텍스트 노드를 글자 단위 span으로 분할
+   // 한 줄 내부의 텍스트 노드를 글자 단위 span으로 분할
     function wrapLineCharacters(lineEl) {
       if (!lineEl) return [];
       const existing = lineEl.querySelectorAll(".prompter-char");
@@ -1978,8 +1988,11 @@
         return Array.from(existing);
       }
 
+      // 불릿/번호/콜아웃 항목인 경우 실제 본문 텍스트가 들어있는 내부 <p> 또는 <div>를 타겟으로 지정
+      const targetContainer = lineEl.querySelector("p, div.flex-1") || lineEl;
+
       const spans = [];
-      const walker = document.createTreeWalker(lineEl, NodeFilter.SHOW_TEXT, null);
+      const walker = document.createTreeWalker(targetContainer, NodeFilter.SHOW_TEXT, null);
       const textNodes = [];
       let currentNode = walker.nextNode();
       while (currentNode) {
@@ -1990,11 +2003,6 @@
       }
 
       textNodes.forEach(tNode => {
-        const parentEl = tNode.parentElement;
-        if (parentEl && parentEl.closest(".flex-shrink-0")) {
-          return;
-        }
-
         const frag = document.createDocumentFragment();
         const chars = Array.from(tNode.nodeValue);
         chars.forEach(ch => {
@@ -2059,7 +2067,7 @@
         if (idx === prompterLineIndex) {
           el.classList.add("prompter-active-line");
           prompterLineCharSpans = wrapLineCharacters(el);
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.scrollIntoView({ behavior: "smooth", block: "nearest" });
         } else {
           // 이미 지나간 줄과 아직 도달하지 않은 줄 모두 강조 없이 원래의 색으로 표현
           el.classList.remove("prompter-active-line");
