@@ -2180,13 +2180,14 @@
     }
 
     // Enter 키 또는 화면 클릭 또는 줄 완료 시 다음 줄로 즉시 이동
+// Enter 키 또는 화면 클릭 또는 줄 완료 시 다음 줄로 즉시 이동 (현재 목차의 마지막 슬라이드 완료 시 정지)
     function advancePrompterLine() {
       if (!isPrompterActive || isInlineEditing) return;
       clearPrompterTimer();
 
       const lines = getPrompterLineElements();
       if (lines.length === 0) {
-        navigateSlide(1);
+        stopPrompter();
         return;
       }
 
@@ -2196,19 +2197,20 @@
           startPrompterTimer();
         }
       } else {
-        const allNodes = getFlattenedSlideNodes();
-        const nodeIdx = allNodes.findIndex(n => n.id === selectedLeafNode.id);
-        const hasNextSlideInNode = currentSlideIdx < (selectedLeafNode.slides.length - 1);
-        const hasNextNode = nodeIdx !== -1 && nodeIdx < allNodes.length - 1;
+        // 현재 선택된 편/장/절/관 항목 내의 다음 슬라이드가 있는지 확인
+        const hasNextSlideInNode =
+          selectedLeafNode &&
+          Array.isArray(selectedLeafNode.slides) &&
+          currentSlideIdx < selectedLeafNode.slides.length - 1;
 
-        if (hasNextSlideInNode || hasNextNode) {
+        if (hasNextSlideInNode) {
           navigateSlide(1);
         } else {
+          // 현재 편/장/절/관의 마지막 슬라이드까지 프롬프팅을 마쳤으므로 정지
           stopPrompter();
         }
       }
     }
-
     function updatePrompterPauseUI() {
       const icon = document.getElementById("prompterPauseIcon");
       const text = document.getElementById("prompterPauseText");
